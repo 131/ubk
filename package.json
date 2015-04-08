@@ -1,0 +1,24 @@
+{
+  "name": "ubk",
+  "version": "0.1.0",
+  "description": "micro message broker",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/131/ubk.git"
+  },
+  "keywords": [
+    "message",
+    "tcp",
+    "ws"
+  ],
+  "author": "Francois Leurent <131.php@cloudyks.org>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/131/ubk/issues"
+  },
+  "homepage": "https://github.com/131/ubk"
+}
