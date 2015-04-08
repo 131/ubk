@@ -1,7 +1,7 @@
-var TCPTransport = require('./transport/tcp.js').TCPClient;
+var TCPTransport = require('./transport/tcp.js');
 
 var Client = module.exports = new Class({
-  Implements : Events,
+  Implements : [require("events").EventEmitter],
   Binds : [
     'receive',
     'register',
@@ -41,7 +41,7 @@ var Client = module.exports = new Class({
   // This client will use a TCP stream
   use_tcp : function(stream){
     var self = this;
-    this.network_client = new TCPClient(stream, this.receive, this.disconnect);
+    this.network_client = new TCPTransport(stream, this.receive, this.disconnect);
 
     // Auto disconnect on timeout of 5s.
     var timeout = setTimeout(function(c) {
@@ -49,7 +49,7 @@ var Client = module.exports = new Class({
       if(self.network_client)
         self.network_client.disconnect();
     }, 5000);
-    this.addEvent('registered', function() { clearTimeout(timeout) })
+    this.once('registered', function() { clearTimeout(timeout) })
   },
 
   use_websocket : function(stream){
@@ -60,7 +60,7 @@ var Client = module.exports = new Class({
   register : function(data) {
     this.client_key = data.args.client_key;
     if(!this.client_key){
-      console.log("Missing cleint key");
+      console.log("Missing client key", data);
       return;
     }
 
@@ -71,7 +71,7 @@ var Client = module.exports = new Class({
       return;
     }
 
-    this.fireEvent('registered', this);
+    this.emit('registered', this);
   },
 
 
@@ -96,7 +96,7 @@ var Client = module.exports = new Class({
 
     // When no local action is found
     // Send to clients manager
-    this.fireEvent('received_cmd', [this, data]);
+    this.emit('received_cmd', [this, data]);
   },
 
   // Send a command to client, callback is not mandatory for signals
@@ -141,7 +141,7 @@ var Client = module.exports = new Class({
     this.network_client = null;
     client.disconnect();
 
-    this.fireEvent('disconnected', this);
+    this.emit('disconnected', this);
     console.log("Client %s disconnected", this.client_key);
   },
 

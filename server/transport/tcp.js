@@ -1,4 +1,4 @@
-exports.TCPClient = new Class({
+module.exports = new Class({
   Binds : [
     'receive',
     'disconnect',

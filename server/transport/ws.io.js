@@ -1,4 +1,4 @@
-exports.WebSocketIOClient = new Class({
+module.exports = new Class({
   Binds : [
     'disconnect',
   ],

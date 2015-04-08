@@ -6,7 +6,7 @@ var util = require('util'),
      tls = require('tls');
 
 
-exports.Client = new Class({
+module.exports = new Class({
   Binds : [
     'connect',
     'build_tls_socket',
@@ -17,14 +17,17 @@ exports.Client = new Class({
   ],
 
   // Server configuration
-  server_hostaddr : '127.0.0.1',
-  server_port     : 8000,
+  config : {
+    server_hostaddr : '127.0.0.1',
+    server_port     : 8000,
+  },
 
   // Network protocol
   Delimiter : 27,
 
   _socket : null,
   _buffer : null,
+  _tls    : {},
 
   // Namespaces callbacks
   namespaces : {},
@@ -33,19 +36,22 @@ exports.Client = new Class({
   // Logger
   log : null,
 
-  initialize:function(license, server_hostaddr) {
-    if(!license)
-      throw new Exception("Invalid license file");
+  initialize:function(config, server_hostaddr) {
+    this.config = Object.merge(Object.clone(this.config), config || {});
 
-    this.client_id        = license.client_id;
-    this.tls = {
-        key   : license.private_key,
-        cert  : license.client_certificate,
-        ca    : license.ca
-    };
+    var license     = config.license;
+    this.client_key  = config.client_key || String.uniqueID();
 
-    this.server_hostaddr  = server_hostaddr || license.server_hostaddr;
-    this.server_hostname  = license.server_hostname || this.server_hostaddr;
+    if(license) {
+      this._tls = {
+          key   : license.private_key,
+          cert  : license.client_certificate,
+          ca    : license.ca
+      };
+    }
+
+    config.server_hostaddr  = server_hostaddr || config.server_hostaddr;
+    config.server_hostname  = config.server_hostname || config.server_hostaddr;
 
     // Always handle base
     this.register_namespace('base', this.base_command);
@@ -54,17 +60,17 @@ exports.Client = new Class({
 
   // Initialier a crypted TLS socket
   build_tls_socket : function(callback){
-    if(!this.tls.key)
+    if(!this._tls.key)
       throw new Error("Missing private key");
-    if(!this.tls.cert)
+    if(!this._tls.cert)
       throw new Error("Missing certificate");
 
     // Setup TLS connection
     var lnk = Object.merge({
-      host : this.server_hostaddr,
-      port : this.server_port,
-      servername : this.server_hostaddr.toLowerCase(),
-    }, this.tls);
+      host : this.config.server_hostaddr,
+      port : this.config.server_port,
+      servername : this.config.server_hostaddr.toLowerCase(),
+    }, this._tls);
 
     console.log("Connecting with TLS to %s:%s", lnk.host, lnk.port);
 
@@ -76,8 +82,8 @@ exports.Client = new Class({
   // Initialize a cleartext tcp socket
   build_net_socket : function(callback){
     var lnk = {
-      host : this.server_hostaddr,
-      port : this.server_port,
+      host : this.config.server_hostaddr,
+      port : this.config.server_port,
     };
     console.log("Connecting with cleartext to %s:%s", lnk.host, lnk.port);
     return net.connect(lnk, callback);
@@ -85,21 +91,21 @@ exports.Client = new Class({
 
   // Connect to the server
   connect : function(){
-    if(!this.client_id)
+    if(!this.client_key)
       throw new Error("Missing client key");
 
     // Secured or clear method ?
-    var is_secured = !!(this.tls.key && this.tls.cert);
+    var is_secured = !!(this._tls.key && this._tls.cert);
     var socket_method = is_secured ? this.build_tls_socket : this.build_net_socket;
 
     // Connect using TLS
-    console.log("Connecting as %s", this.client_id);
+    console.log("Connecting as %s", this.client_key);
 
     this._buffer = new Buffer(0);
     this._socket = socket_method(function() {
       console.log('Client connected');
       // Directly send register
-      this.send('base', 'register', {client_id : this.client_id});
+      this.send('base', 'register', {client_key : this.client_key});
     }.bind(this));
 
     // Bind datas

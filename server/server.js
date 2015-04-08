@@ -1,12 +1,14 @@
 var tls = require('tls'),
     net = require('net');
 
-var Client = require('./client.js').Client;
+var Client = require('./client.js');
+
 
 var Server = module.exports = new Class({
-  Implements : Events,
+  Implements : [ require("events").EventEmitter ],
 
   Binds : [
+    'start',
     'heartbeat',
     'build_tls_server',
     'build_net_server',
@@ -21,9 +23,19 @@ var Server = module.exports = new Class({
   _clientsList : {},
   _clientHeartBeat : null,
 
-  initialize:function() {
+  options : {
+    'secured' : false,
+    'port'    : 8000,
+  },
 
-    if(false) {
+
+
+  initialize:function(options) {
+
+    this.options = Object.merge(Object.clone(this.options), options || {});
+
+
+    if(this.options.secured) {
       var tls_options = {
           requestCert: true,
           rejectUnauthorized : true,
@@ -39,25 +51,25 @@ var Server = module.exports = new Class({
   },
 
   start : function(chain) {
-    var self = this;
+    var self = this,
+        port = this.options.port;
 
     this._clientHeartBeat = setInterval(this.heartbeat, 1000 * 2.5);
 
-    var tcp_method = bool(this.config.HERMES_SERVICES_SECURED) ? this.build_tls_server : this.build_net_server;
-
-    console.log("Server is in %s mode", bool(this.config.HERMES_SERVICES_SECURED) ? "SECURED" : "NON SECURED");
-    tcp_method(port);
+    console.log("Server is in %s mode", this.options.secured ? "SECURED" : "NON SECURED");
+  
     this.tcp_server.listen(port, function(){
-      console.log("Started encrypted TCP server for clients on port "+port);
-    }
+      console.log("Started TCP server for clients on port %d", port);
+      chain();
+    });
   },
 
-  hearbeat:function(){
+  heartbeat:function(){
 
     Object.each(this._clientsList, function(client){
       // Check failures
       if(client.ping_failure) {
-        console.log("client " + client.client_id + " failed ping challenge, assume disconnected");
+        console.log("client " + client.client_key + " failed ping challenge, assume disconnected");
         return client.disconnect();
       }
 
@@ -73,17 +85,17 @@ var Server = module.exports = new Class({
 
   // Build new client from tcp stream
   new_tcp_client : function(stream){
-    var client = new client('tcp', stream);
-    client.addEvent('registered', this.register_client);
-    client.addEvent('disconnected', this.lost_client);
-    client.addEvent('received_cmd', this.received_cmd);
+    var client = new Client('tcp', stream);
+    client.once('registered', this.register_client);
+    client.once('disconnected', this.lost_client);
+    client.on('received_cmd', this.received_cmd);
   },
 
   // Build new client from web socket stream
   new_websocket_client : function(stream){
-    var client = new client('websocket', stream);
-    client.addEvent('disconnected', this.lost_client);
-    client.addEvent('received_cmd', this.received_cmd);
+    var client = new Client('websocket', stream);
+    client.once('disconnected', this.lost_client);
+    client.on('received_cmd', this.received_cmd);
     this.register_client(client); // direct register, we are connected !
   },
 
@@ -98,29 +110,25 @@ var Server = module.exports = new Class({
     }
 
     // Avoid conflicts
-    if(this.clients[client.client_key]){
+    if(this._clientsList[client.client_key]){
       console.log("TCP client "+client.client_key +" already exists, sorry");
       client.disconnect();
       return;
     }
 
     // Save client
-    this.clients[client.client_key] = client;
+    this._clientsList[client.client_key] = client;
 
     // Propagate
-    this.fireEvent('registered_client', client);
+    this.emit('registered_client', client);
     this.broadcast('base', 'registered_client', client.export_json());
   },
 
   lost_client : function(client){
     // Remove from list
-    delete this.clients[client.client_key];
-    this.fireEvent('unregistered_client', client);
+    delete this._clientsList[client.client_key];
+    this.emit('unregistered_client', client);
     this.broadcast('base', 'unregistered_client', {client_key : client.client_key });
-
-    Object.each(this.clients, function(target){
-      this.broadcast('base', 'update_client', target.export_json());
-    }.bind(this));
 
   },
 
@@ -151,7 +159,7 @@ var Server = module.exports = new Class({
   },
 
   broadcast:function(namespace, cmd, payload){
-    Object.each(this.clients, function(client){
+    Object.each(this._clientsList, function(client){
       client.send(namespace, cmd, payload);
     });
   },
