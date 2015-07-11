@@ -1,3 +1,7 @@
+var Class   = require('uclass');
+var guid    = require('mout/random/guid');
+
+
 module.exports = new Class({
   Binds : [
     'receive',
@@ -33,7 +37,7 @@ module.exports = new Class({
       this.secured   = true;
       console.log("Connected using SSL cert " + this.clientId);
     } else {
-      this.clientId  = String.uniqueID();
+      this.clientId  = guid();
     }
   },
 

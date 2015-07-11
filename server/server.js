@@ -1,11 +1,14 @@
 var tls = require('tls'),
     net = require('net');
 
-var Client = require('./client.js');
+var Class   = require('uclass');
+var Options = require('uclass/options');
+var Client  = require('./client.js');
+var each    = require('mout/object/forOwn');
 
 
 var Server = module.exports = new Class({
-  Implements : [ require("events").EventEmitter ],
+  Implements : [ require("events").EventEmitter, Options],
 
   Binds : [
     'start',
@@ -32,7 +35,7 @@ var Server = module.exports = new Class({
 
   initialize:function(options) {
 
-    this.options = Object.merge(Object.clone(this.options), options || {});
+    this.setOptions(options);
 
 
     if(this.options.secured) {
@@ -66,7 +69,7 @@ var Server = module.exports = new Class({
 
   heartbeat:function(){
 
-    Object.each(this._clientsList, function(client){
+    each(this._clientsList, function(client){
       // Check failures
       if(client.ping_failure) {
         console.log("client " + client.client_key + " failed ping challenge, assume disconnected");
@@ -120,14 +123,12 @@ var Server = module.exports = new Class({
     this._clientsList[client.client_key] = client;
 
     // Propagate
-    this.emit('registered_client', client);
     this.broadcast('base', 'registered_client', client.export_json());
   },
 
   lost_client : function(client){
     // Remove from list
     delete this._clientsList[client.client_key];
-    this.emit('unregistered_client', client);
     this.broadcast('base', 'unregistered_client', {client_key : client.client_key });
 
   },
@@ -159,9 +160,11 @@ var Server = module.exports = new Class({
   },
 
   broadcast:function(namespace, cmd, payload){
-    Object.each(this._clientsList, function(client){
+    each(this._clientsList, function(client){
       client.send(namespace, cmd, payload);
     });
+
+    this.emit(util.format("%s:%s", namespace, cmd), payload);
   },
 
 });

@@ -20,5 +20,9 @@
   "bugs": {
     "url": "https://github.com/131/ubk/issues"
   },
-  "homepage": "https://github.com/131/ubk"
+  "homepage": "https://github.com/131/ubk",
+  "dependencies": {
+    "mout": "^0.11.0",
+    "uclass": "^1.1.0"
+  }
 }

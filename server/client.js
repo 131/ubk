@@ -1,4 +1,6 @@
+var Class   = require('uclass');
 var TCPTransport = require('./transport/tcp.js');
+
 
 var Client = module.exports = new Class({
   Implements : [require("events").EventEmitter],
@@ -19,27 +21,7 @@ var Client = module.exports = new Class({
   // Commands sent
   call_stack : {},
 
-  initialize : function(mode, stream){
-    if(mode == 'tcp')
-      this.use_tcp(stream);
-    else if(mode == 'tcp')
-      this.use_tcp(stream);
-    else 
-      throw "Unsupported client network design";
-  },
-
-
-  // Export client configuration
-  export_json : function(){
-    return {
-      client_key  : this.client_key,
-      remoteAddress : this.network_client.export_json(),
-    };
-  },
-
-  
-  // This client will use a TCP stream
-  use_tcp : function(stream){
+  initialize : function(stream){
     var self = this;
     this.network_client = new TCPTransport(stream, this.receive, this.disconnect);
 
@@ -50,11 +32,16 @@ var Client = module.exports = new Class({
         self.network_client.disconnect();
     }, 5000);
     this.once('registered', function() { clearTimeout(timeout) })
+
   },
 
-  use_websocket : function(stream){
-    this.network_client = new WebSocketClient(stream, this.receive, this.disconnect);
-    this.client_key = 'CLIENT-' + this.network_client.id;
+
+  // Export client configuration
+  export_json : function(){
+    return {
+      client_key    : this.client_key,
+      remoteAddress : this.network_client.export_json(),
+    };
   },
 
   register : function(data) {

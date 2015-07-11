@@ -1,4 +1,6 @@
-require('nyks');
+var Class = require('uclass');
+var Options = require('uclass/options');
+var guid    = require('mout/random/guid');
 
 var util = require('util'),
      net  = require('net'),
@@ -7,6 +9,7 @@ var util = require('util'),
 
 
 module.exports = new Class({
+  Implements : [Options],
   Binds : [
     'connect',
     'build_tls_socket',
@@ -14,6 +17,7 @@ module.exports = new Class({
     'receive',
     'parse',
     'base_command',
+    'register_namespace',
   ],
 
   // Server configuration
@@ -37,10 +41,10 @@ module.exports = new Class({
   log : null,
 
   initialize:function(config, server_hostaddr) {
-    this.config = Object.merge(Object.clone(this.config), config || {});
+    this.setOptions(config);
 
     var license     = config.license;
-    this.client_key  = config.client_key || String.uniqueID();
+    this.client_key  = config.client_key || guid();
 
     if(license) {
       this._tls = {
@@ -115,13 +119,19 @@ module.exports = new Class({
     });
   },
 
+  respond : function(query, response){
+    query.response = response;
+    this.write(query);
+  },
+
+
   // Send a command with some args to the server
-  send : function(namespace, cmd, args, callback){
+  send : function(ns, cmd, args, callback){
     var quid = String.uniqueID();
 
     var query = {
-      ns : namespace,
-      cmd : cmd,
+      ns   : ns,
+      cmd  : cmd,
       quid : quid,
       args : args
     };
