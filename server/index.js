@@ -1,10 +1,12 @@
-var tls = require('tls'),
-    net = require('net');
+var tls   = require('tls'),
+    util  = require('util'),
+    net   = require('net');
 
 var Class   = require('uclass');
 var Options = require('uclass/options');
 var Client  = require('./client.js');
 var each    = require('mout/object/forOwn');
+
 
 
 var Server = module.exports = new Class({
@@ -27,8 +29,8 @@ var Server = module.exports = new Class({
   _clientHeartBeat : null,
 
   options : {
-    'secured' : false,
-    'port'    : 8000,
+    'secured'       : false,
+    'server_port'   : 8000,
   },
 
 
@@ -55,14 +57,14 @@ var Server = module.exports = new Class({
 
   start : function(chain) {
     var self = this,
-        port = this.options.port;
+        server_port = this.options.server_port;
 
     this._clientHeartBeat = setInterval(this.heartbeat, 1000 * 2.5);
 
     console.log("Server is in %s mode", this.options.secured ? "SECURED" : "NON SECURED");
   
-    this.tcp_server.listen(port, function(){
-      console.log("Started TCP server for clients on port %d", port);
+    this.tcp_server.listen(server_port, function(){
+      console.log("Started TCP server for clients on port %d", server_port);
       chain();
     });
   },
@@ -88,7 +90,7 @@ var Server = module.exports = new Class({
 
   // Build new client from tcp stream
   new_tcp_client : function(stream){
-    var client = new Client('tcp', stream);
+    var client = new Client(stream);
     client.once('registered', this.register_client);
     client.once('disconnected', this.lost_client);
     client.on('received_cmd', this.received_cmd);

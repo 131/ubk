@@ -1,5 +1,6 @@
 var Class   = require('uclass');
 var TCPTransport = require('./transport/tcp.js');
+var guid    = require('mout/random/guid');
 
 
 var Client = module.exports = new Class({
@@ -20,6 +21,8 @@ var Client = module.exports = new Class({
 
   // Commands sent
   call_stack : {},
+
+  log : console,
 
   initialize : function(stream){
     var self = this;
@@ -54,7 +57,7 @@ var Client = module.exports = new Class({
     // Check SSL client cert matches
     var exp = this.network_client.export_json();
     if(exp.secured && exp.name != this.client_key){
-      console.log("The cert ("+exp.name+") does NOT match the given id "+this.client_key);
+      this.log.info("The cert (%s) does NOT match the given id %s", exp.name, this.client_key);
       return;
     }
 
@@ -91,7 +94,7 @@ var Client = module.exports = new Class({
     if(!(ns == 'base' && cmd == 'ping'))
       console.log("Send msg '%s:%s' to %s ", cmd, ns, this.client_key);
 
-    var quid = String.uniqueID();
+    var quid = guid();
 
     var query = {
       ns : ns,

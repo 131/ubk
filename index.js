@@ -1,4 +1,4 @@
-module.exports.Server = require('./server/server.js');
+module.exports.Server = require('./server/');
 module.exports.Client = {};
-module.exports.Client.TCP = require('./client/tcp/base.js');
+module.exports.Client.TCP = require('./client/tcp/');
 

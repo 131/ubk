@@ -1,6 +1,7 @@
 var Class   = require('uclass');
-var guid    = require('mout/random/guid');
 
+var guid    = require('mout/random/guid');
+var indexOf = require('mout/array/indexof');
 
 module.exports = new Class({
   Binds : [
@@ -23,7 +24,7 @@ module.exports = new Class({
     this._buffer = new Buffer(0);
 
     // Listen TCP Stream events
-    this._stream    = stream;
+    this._stream      = stream;
     this.onMessage    = message;
     this.onDisconnect = disconnect;
 
@@ -61,7 +62,7 @@ module.exports = new Class({
     var delimiter_pos;
     this._buffer = Buffer.concat([this._buffer, chars]);
 
-    while((delimiter_pos = this._buffer.indexOf(this.Delimiter)) != -1) {
+    while((delimiter_pos = indexOf(this._buffer, this.Delimiter)) != -1) {
       // Read until delimiter
       var buff = this._buffer.slice(0, delimiter_pos);
       this._buffer = this._buffer.slice(delimiter_pos + 1);
