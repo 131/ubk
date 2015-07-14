@@ -92,7 +92,7 @@ var Client = module.exports = new Class({
   // Send a command to client, callback is not mandatory for signals
   send : function(ns, cmd, args, callback){
     if(!(ns == 'base' && cmd == 'ping'))
-      console.log("Send msg '%s:%s' to %s ", cmd, ns, this.client_key);
+      console.log("Send msg '%s:%s' to %s ", ns, cmd, this.client_key);
 
     var quid = guid();
 

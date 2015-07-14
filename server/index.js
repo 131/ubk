@@ -161,12 +161,13 @@ var Server = module.exports = new Class({
     }
   },
 
-  broadcast:function(namespace, cmd, payload){
+  broadcast:function(ns, cmd, payload){
+  console.log("BROADCASTING ", ns, cmd);
     each(this._clientsList, function(client){
-      client.send(namespace, cmd, payload);
+      client.send(ns, cmd, payload);
     });
 
-    this.emit(util.format("%s:%s", namespace, cmd), payload);
+    this.emit(util.format("%s:%s", ns, cmd), payload);
   },
 
 });
