@@ -252,14 +252,11 @@ module.exports = new Class({
   },
 
   // Base protocol handler
-  base_command : function(data){
+  base_command : function(query){
 
     // Just response to ping.
-    if(data.cmd == "ping"){
-      data.response = "pong";
-      return this.write(data);
-    }
-
+    if(query.cmd == "ping")
+      return this.respond(query, "pong");
   },
 
 
