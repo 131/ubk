@@ -115,7 +115,8 @@ var Server = module.exports = new Class({
 
   // Register an active client, with id
   // Used by new_tcp_client
-  register_client : function(client){
+
+  register_client : function(client, registrationQuery){
     // Check id
     if(!client.client_key){
       console.log("No id for client to register");
@@ -135,6 +136,9 @@ var Server = module.exports = new Class({
 
     // Propagate
     this.broadcast('base', 'registered_client', client.export_json());
+
+    if(registrationQuery)
+      client.respond(registrationQuery, "ok");
   },
 
   lost_client : function(client){

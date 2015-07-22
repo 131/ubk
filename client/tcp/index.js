@@ -11,12 +11,15 @@ var util = require('util'),
 
 
 module.exports = new Class({
-  Implements : [Options],
+  Implements : [Options, require("events").EventEmitter],
   Binds : [
     'connect',
     'build_tls_socket',
     'build_net_socket',
     'receive',
+    'send',
+    'write',
+
     'call',
     'call_rpc',
 
@@ -130,6 +133,7 @@ module.exports = new Class({
       self.send('base', 'register', {client_key : self.client_key}, function(){
         self.log.info('Client has been registered');
         chain();
+        self.emit("registered");
       });
     });
 

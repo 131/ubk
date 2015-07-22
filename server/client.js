@@ -48,10 +48,10 @@ var Client = module.exports = new Class({
     };
   },
 
-  register : function(data) {
-    this.client_key = data.args.client_key;
+  register : function(query) {
+    this.client_key = query.args.client_key;
     if(!this.client_key){
-      console.log("Missing client key", data);
+      console.log("Missing client key", query);
       return;
     }
 
@@ -62,7 +62,7 @@ var Client = module.exports = new Class({
       return;
     }
 
-    this.emit('registered', this);
+    this.emit('registered', this, query);
   },
 
 

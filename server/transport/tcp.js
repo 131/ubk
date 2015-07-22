@@ -7,6 +7,7 @@ module.exports = new Class({
   Binds : [
     'receive',
     'disconnect',
+    'send',
   ],
 
   // Network stuff
