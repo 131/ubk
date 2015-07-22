@@ -10,17 +10,9 @@ var merge   = require('mout/object/merge');
 
 
 
-var Foo = new Class({
-  Implements : [ require("events").EventEmitter, Options],
-  options : {
-    'foo'       : "bar",
-  },
-
-});
-
-
 var Server = module.exports = new Class({
-  Extends : Foo,
+  Implements : [ require("events").EventEmitter, Options],
+
 
   Binds : [
     'start',
@@ -29,6 +21,8 @@ var Server = module.exports = new Class({
     'build_net_server',
     'new_tcp_client',
     'new_websocket_client',
+    'get_client',
+
     'register_client',
     'register_cmd',
     'register_rpc',
@@ -64,6 +58,10 @@ var Server = module.exports = new Class({
       this.tcp_server = net.createServer(this.new_tcp_client);
     }
 
+  },
+
+  get_client : function(client_key){
+    return this._clientsList[client_key];
   },
 
   start : function(chain) {
