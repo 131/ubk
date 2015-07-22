@@ -18,7 +18,7 @@ module.exports = new Class({
 
   // TLS
   secured   : false,
-  clientId   : null,
+  client_key   : null,
 
   initialize : function(stream, message, disconnect){
     this._buffer = new Buffer(0);
@@ -34,11 +34,11 @@ module.exports = new Class({
     // Load client cert when secured
     if(this._stream.encrypted != null){
       var cert       = this._stream.getPeerCertificate();
-      this.clientId  = cert.subject.CN;
+      this.client_key  = cert.subject.CN;
       this.secured   = true;
-      console.log("Connected using SSL cert " + this.clientId);
+      console.log("Connected using SSL cert " + this.client_key);
     } else {
-      this.clientId  = guid();
+      this.client_key  = guid();
     }
   },
 
@@ -49,7 +49,7 @@ module.exports = new Class({
       address : this._stream.remoteAddress,
       port    : this._stream.remotePort,
       secured : this.secured,
-      name    : this.clientId,
+      name    : this.client_key,
     }
   },
 
