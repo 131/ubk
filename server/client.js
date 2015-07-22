@@ -10,6 +10,7 @@ var Client = module.exports = new Class({
     'register',
     'disconnect',
     'send',
+    'call_rpc',
     'write',
   ],
 
@@ -81,12 +82,18 @@ var Client = module.exports = new Class({
     }
 
     // Debug
-    console.log("Client "+this.client_key+" received : ");
-    console.log(data);
+    console.log("Received ", data, " from client", this.client_key);
 
     // When no local action is found
     // Send to clients manager
-    this.emit('received_cmd', [this, data]);
+    this.emit('received_cmd', this, data);
+  },
+
+
+  call_rpc : function(ns, cmd, args, callback){
+    this.send(ns, cmd, args, function(response){
+      callback.apply(null, response);
+    });
   },
 
   // Send a command to client, callback is not mandatory for signals

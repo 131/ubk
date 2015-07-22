@@ -6,11 +6,21 @@ var Class   = require('uclass');
 var Options = require('uclass/options');
 var Client  = require('./client.js');
 var each    = require('mout/object/forOwn');
+var merge   = require('mout/object/merge');
 
+
+
+var Foo = new Class({
+  Implements : [ require("events").EventEmitter, Options],
+  options : {
+    'foo'       : "bar",
+  },
+
+});
 
 
 var Server = module.exports = new Class({
-  Implements : [ require("events").EventEmitter, Options],
+  Extends : Foo,
 
   Binds : [
     'start',
@@ -21,8 +31,10 @@ var Server = module.exports = new Class({
     'new_websocket_client',
     'register_client',
     'register_cmd',
+    'register_rpc',
     'received_cmd',
     'lost_client',
+    'call',
   ],
 
   _clientsList : {},
@@ -33,12 +45,11 @@ var Server = module.exports = new Class({
     'server_port'   : 8000,
   },
 
-
+  _namespaces : {},
 
   initialize:function(options) {
 
     this.setOptions(options);
-
 
     if(this.options.secured) {
       var tls_options = {
@@ -135,27 +146,58 @@ var Server = module.exports = new Class({
 
   },
 
+  call : function(ns, cmd, args, callback){
+    args.push(callback);
+
+    if(! (this._namespaces[ns] && this._namespaces[ns][cmd]))
+      throw "Missing command";
+
+    var task = this._namespaces[ns][cmd];
+    if(!task.task) //this is not a proper local callable !
+      throw "Cannot use local call on non local tasks";
+
+    task.task.apply(null, args);
+  },
+
+
+
+  register_rpc : function(ns, cmd, task){
+    var self = this;
+    var callback = function(device, query){
+      var args = query.args;
+      args.push(function(response){
+        response = [].slice.apply(arguments);
+        device.respond(query, response);
+      });
+      task.apply(null, args);
+    };
+    callback.task = task;
+    this.register_cmd(ns, cmd, callback);
+  },
+
+
   // Register a cmd for a namespace
   register_cmd : function(namespace, cmd, callback){
-    console.log('Register '+namespace+'.'+cmd);
-    if(!this.namespaces[namespace])
-      this.namespaces[namespace] = {};
-    if(this.namespaces[namespace][cmd])
+    console.log('Register '+namespace+'.'+cmd, this._namespaces);
+    if(!this._namespaces[namespace])
+      this._namespaces[namespace] = {};
+    if(this._namespaces[namespace][cmd])
       throw new Error("Already registered "+namespace+'.'+cmd);
-    this.namespaces[namespace][cmd] = callback;
+    this._namespaces[namespace][cmd] = callback;
   },
 
   // Apply a registered command
-  received_cmd : function(client, data){
+  received_cmd : function(client, query){
     try{
-      if(!data)
-        throw new Error("No data.");
-      if(!this.namespaces[data.ns])
-        throw new Error("No namespace "+data.ns);
-      var callback = this.namespaces[data.ns][data.cmd];
+      if(!query)
+        throw new Error("No query.");
+      if(!this._namespaces[query.ns])
+        throw new Error("No namespace "+query.ns);
+      var callback = this._namespaces[query.ns][query.cmd];
       if(!callback)
-        throw new Error("No cmd "+data.cmd+" in namespace "+data.ns);
-      callback(client, data);
+        throw new Error("No cmd "+query.cmd+" in namespace "+query.ns);
+
+      callback(client, query);
     }catch(e){
       console.log("Failed callback for cmd: "+e);
     }

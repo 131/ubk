@@ -17,6 +17,8 @@ module.exports = new Class({
     'build_tls_socket',
     'build_net_socket',
     'receive',
+    'call',
+    'call_rpc',
 
     '_dispatch',
     'base_command',
@@ -51,7 +53,6 @@ module.exports = new Class({
 
   initialize:function(options, server_hostaddr) {
     this.setOptions(options);
-
     var license     = options.license;
     this.client_key  = options.client_key || guid();
 
@@ -94,6 +95,7 @@ module.exports = new Class({
 
   // Initialize a cleartext tcp socket
   build_net_socket : function(callback){
+
     var lnk = {
       host : this.options.server_hostaddr,
       port : this.options.server_port,
@@ -212,6 +214,45 @@ module.exports = new Class({
       delete this._cmds[ns][cmd];
   },
 
+
+
+  call : function(ns, cmd, args, callback){
+    args.push(callback);
+
+    if(! (this._cmds[ns] && this._cmds[ns][cmd]))
+      throw "Missing command";
+
+    var task = this._cmds[ns][cmd];
+    if(!task.task) //this is not a proper local callable !
+      throw "Cannot use local call on non local tasks";
+
+    task.task.apply(null, args);
+  },
+
+
+  call_rpc : function(ns, cmd, args, callback){
+    this.send(ns, cmd, args, function(response){
+      callback.apply(null, response);
+    });
+  },
+
+
+  register_rpc : function(ns, cmd, task){
+    var self = this;
+    var callback = function(query){
+      var args = query.args;
+      args.push(function(response){
+        response = [].slice.apply(arguments);
+        console.log("in client this is response", response);
+        self.respond(query, response);
+      });
+      task.apply(null, args);
+    };
+    callback.task = task;
+
+    this.register_cmd(ns, cmd, callback);
+  },
+
   register_cmd : function(ns, cmd, callback){
     if(!this.namespaces[ns])
       this.register_namespace(ns, this._dispatchNS);
@@ -247,7 +288,6 @@ module.exports = new Class({
     if(namespace in this.namespaces)
       this.namespaces[namespace](data);
      else this.log.error("error", "Unknown namespace " + namespace );
-
 
   },
 
