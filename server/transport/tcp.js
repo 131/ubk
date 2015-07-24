@@ -59,6 +59,7 @@ module.exports = new Class({
   // * read until delimiter
   // * send back to client via event
   receive : function(chars){
+
     this._connected = true;
     var delimiter_pos;
     this._buffer = Buffer.concat([this._buffer, chars]);

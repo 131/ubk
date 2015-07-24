@@ -11,7 +11,7 @@ var merge   = require('mout/object/merge');
 
 
 var Server = module.exports = new Class({
-  Implements : [ require("events").EventEmitter, Options],
+  Implements : [ require("uclass/events"), Options],
 
 
   Binds : [

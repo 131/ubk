@@ -11,7 +11,7 @@ var util = require('util'),
 
 
 module.exports = new Class({
-  Implements : [Options, require("events").EventEmitter],
+  Implements : [Options, require("uclass/events")],
   Binds : [
     'connect',
     'build_tls_socket',

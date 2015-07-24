@@ -4,7 +4,7 @@ var guid    = require('mout/random/guid');
 
 
 var Client = module.exports = new Class({
-  Implements : [require("events").EventEmitter],
+  Implements : [require("uclass/events")],
   Binds : [
     'receive',
     'register',
@@ -68,6 +68,8 @@ var Client = module.exports = new Class({
 
   // React to received data
   receive : function(data){
+    // Debug
+    console.log("Received ", data, " from client", this.client_key);
 
     // Got new client id
     if( data.ns == 'base' && data.cmd == 'register'){
@@ -81,8 +83,6 @@ var Client = module.exports = new Class({
       return;
     }
 
-    // Debug
-    console.log("Received ", data, " from client", this.client_key);
 
     // When no local action is found
     // Send to clients manager
