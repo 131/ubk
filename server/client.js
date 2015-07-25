@@ -128,12 +128,16 @@ var Client = module.exports = new Class({
 
   // Low Level send raw JSON
   write : function(data){
+    if(!this.network_client)
+      return;
     this.network_client.send(data);
   },
 
 
   // Low Level send raw JSON
   respond: function(query, response){
+    if(!this.network_client)
+      return;
     query.response = response;
     delete query.args;
     this.network_client.send(query);
