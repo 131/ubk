@@ -1,7 +1,7 @@
 var Class = require('uclass');
 var Options = require('uclass/options');
 var guid    = require('mout/random/guid');
-var indexOf = require('mout/array/indexof');
+var indexOf = require('mout/array/indexOf');
 
 
 var util = require('util'),

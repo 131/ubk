@@ -1,7 +1,7 @@
 var Class   = require('uclass');
 
 var guid    = require('mout/random/guid');
-var indexOf = require('mout/array/indexof');
+var indexOf = require('mout/array/indexOf');
 
 module.exports = new Class({
   Binds : [
