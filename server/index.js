@@ -99,36 +99,34 @@ var Server = module.exports = new Class({
 
   // Build new client from tcp stream
   new_tcp_client : function(stream){
-    var client = new Client(stream);
-    client.once('registered', this.register_client);
+    var client = new Client(stream, this.register_client);
     client.once('disconnected', this.lost_client);
     client.on('received_cmd', this.received_cmd);
   },
 
   // Build new client from web socket stream
   new_websocket_client : function(stream){
-    var client = new Client('websocket', stream);
+    var client = new Client(stream);
     client.once('disconnected', this.lost_client);
     client.on('received_cmd', this.received_cmd);
-    this.register_client(client); // direct register, we are connected !
+    this.register_client(client, function(){}); // direct register, we are connected !
   },
 
   // Register an active client, with id
   // Used by new_tcp_client
 
-  register_client : function(client, registrationQuery){
+  register_client : function(client, chain){
+    
     // Check id
     if(!client.client_key){
-      console.log("No id for client to register");
       client.disconnect();
-      return;
+      return chain("No id for client to register");
     }
 
     // Avoid conflicts
     if(this._clientsList[client.client_key]){
-      console.log("TCP client "+client.client_key +" already exists, sorry");
       client.disconnect();
-      return;
+      return chain("TCP client "+client.client_key +" already exists, sorry");
     }
 
     // Save client
@@ -137,12 +135,12 @@ var Server = module.exports = new Class({
     // Propagate
     this.broadcast('base', 'registered_client', client.export_json());
 
-    if(registrationQuery)
-      client.respond(registrationQuery, "ok");
+    chain();
   },
 
   lost_client : function(client){
     // Remove from list
+    console.log("Lost client");
     delete this._clientsList[client.client_key];
     this.broadcast('base', 'unregistered_client', {client_key : client.client_key });
 
@@ -190,6 +188,10 @@ var Server = module.exports = new Class({
 
   // Apply a registered command
   received_cmd : function(client, query){
+    if(!(client.client_key  in this._clientsList)) {
+      console.log("Ignoring ghost command");
+      return;
+    }
     try{
       if(!query)
         throw new Error("No query.");

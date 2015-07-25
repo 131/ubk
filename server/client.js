@@ -25,7 +25,7 @@ var Client = module.exports = new Class({
 
   log : console,
 
-  initialize : function(stream){
+  initialize : function(stream, registration){
     var self = this;
     this.network_client = new TCPTransport(stream, this.receive, this.disconnect);
 
@@ -35,8 +35,20 @@ var Client = module.exports = new Class({
       if(self.network_client)
         self.network_client.disconnect();
     }, 5000);
-    this.once('registered', function() { clearTimeout(timeout) })
 
+    this.once("registered", function(){clearTimeout(timeout) ;});
+
+    var once = false;
+    this.registration = function(query){
+      if(once || !registration) return; once  = true;
+
+      registration(self, function(err){
+          if(err)
+            return; //leaving the timeout to kill us
+          self.respond(query, "ok");
+          self.emit("registered");
+      });
+    }
   },
 
 
@@ -44,25 +56,25 @@ var Client = module.exports = new Class({
   export_json : function(){
     return {
       client_key    : this.client_key,
-      remoteAddress : this.network_client.export_json(),
+        //networkclient is canceled on disconnected clients
+      remoteAddress : this.network_client ? this.network_client.export_json() : {},
     };
   },
 
   register : function(query) {
-    this.client_key = query.args.client_key;
-    if(!this.client_key){
-      console.log("Missing client key", query);
-      return;
-    }
 
+    if(!this.network_client)
+      return; //leave the timeout to kill us
+
+    this.client_key = query.args.client_key;
     // Check SSL client cert matches
     var exp = this.network_client.export_json();
     if(exp.secured && exp.name != this.client_key){
       this.log.info("The cert (%s) does NOT match the given id %s", exp.name, this.client_key);
+      //leaving the initialize timeout to kill us
       return;
     }
-
-    this.emit('registered', this, query);
+    this.registration(query);
   },
 
 
@@ -82,7 +94,6 @@ var Client = module.exports = new Class({
       delete this.call_stack[data.quid];
       return;
     }
-
 
     // When no local action is found
     // Send to clients manager

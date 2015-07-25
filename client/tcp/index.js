@@ -99,6 +99,7 @@ module.exports = new Class({
   // Initialize a cleartext tcp socket
   build_net_socket : function(callback){
 
+
     var lnk = {
       host : this.options.server_hostaddr,
       port : this.options.server_port,
@@ -109,6 +110,8 @@ module.exports = new Class({
 
   // Connect to the server
   connect : function(chain, ondisconnect) {
+
+
     var self = this;
 
     if(!chain)
@@ -131,8 +134,9 @@ module.exports = new Class({
       self.log.info('Client network connected');
       // Directly send register
       self.send('base', 'register', {client_key : self.client_key}, function(){
-        self.log.info('Client has been registered');
         chain();
+        self.log.info('Client has been registered');
+
         self.emit("registered");
       });
     });
