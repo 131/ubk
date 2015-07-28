@@ -16,10 +16,11 @@ var Client = module.exports = new Class({
 
   // Identification
   client_key : null,
+  registration_time : null,
 
   // Network : tcp or websocket
   network_client : null,
-
+  
   // Commands sent
   call_stack : {},
 
@@ -41,6 +42,8 @@ var Client = module.exports = new Class({
     var once = false;
     this.registration = function(query){
       if(once || !registration) return; once  = true;
+      self.registration_time  = Date.now();
+
 
       registration(self, function(err){
           if(err)
@@ -56,6 +59,8 @@ var Client = module.exports = new Class({
   export_json : function(){
     return {
       client_key    : this.client_key,
+      registration_time : Math.floor(this.registration_time/1000),
+      uptime: Math.floor((Date.now() - this.registration_time) / 1000),
         //networkclient is canceled on disconnected clients
       remoteAddress : this.network_client ? this.network_client.export_json() : {},
     };
