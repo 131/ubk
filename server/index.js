@@ -37,6 +37,7 @@ var Server = module.exports = new Class({
   options : {
     'secured'       : false,
     'server_port'   : 8000,
+    'heartbeat_interval' : 1000 * 10,
   },
 
   _namespaces : {},
@@ -68,7 +69,7 @@ var Server = module.exports = new Class({
     var self = this,
         server_port = this.options.server_port;
 
-    this._clientHeartBeat = setInterval(this.heartbeat, 1000 * 2.5);
+    this._clientHeartBeat = setInterval(this.heartbeat,  this.options.heartbeat_interval);
 
     console.log("Server is in %s mode", this.options.secured ? "SECURED" : "NON SECURED");
   
