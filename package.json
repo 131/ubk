@@ -1,6 +1,6 @@
 {
   "name": "ubk",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "micro message broker",
   "main": "index.js",
   "scripts": {
@@ -23,7 +23,7 @@
   "homepage": "https://github.com/131/ubk",
   "dependencies": {
     "mout": "^0.11.0",
-    "uclass": "^2.0.1"
+    "uclass": "^2.0.4"
   },
   "devDependencies": {
     "expect.js": "^0.3.1",
