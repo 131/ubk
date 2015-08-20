@@ -119,9 +119,6 @@ module.exports = new Class({
     if(!ondisconnect)
       ondisconnect = Function.prototype;
 
-    if(!this.client_key)
-      throw new Error("Missing client key");
-
     // Secured or clear method ?
     var is_secured    = !!(this._tls.key && this._tls.cert);
     var socket_method = is_secured ? this.build_tls_socket : this.build_net_socket;
@@ -280,8 +277,7 @@ module.exports = new Class({
   _dispatch : function(data) {
 
     if(true || ! (data.cmd == "ping" && data.ns == "base") ) {
-      this.log.info("Received >>");
-      this.log.info(data);
+      this.log.info("[%s] received >>", this.client_key, data);
     }
 
     // Local call stack
