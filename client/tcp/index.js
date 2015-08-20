@@ -2,6 +2,8 @@ var Class = require('uclass');
 var Options = require('uclass/options');
 var guid    = require('mout/random/guid');
 var indexOf = require('mout/array/indexOf');
+var merge = require('mout/object/merge');
+
 
 
 var util = require('util'),
@@ -83,11 +85,12 @@ module.exports = new Class({
       throw new Error("Missing certificate");
 
     // Setup TLS connection
-    var lnk = Object.merge({
+    var lnk = merge({
       host : this.options.server_hostaddr,
       port : this.options.server_port,
       servername : this.options.server_hostaddr.toLowerCase(),
     }, this._tls);
+
 
     this.log.info("Connecting with TLS to %s:%s", lnk.host, lnk.port);
 
@@ -109,11 +112,11 @@ module.exports = new Class({
   },
 
   // Connect to the server
-  connect : function(chain, ondisconnect) {
-
+  connect : function(chain, ondisconnect, server_addr) {
 
     var self = this;
 
+    this.options.server_hostaddr = server_addr || this.options.server_hostaddr ;
     if(!chain)
       chain = Function.prototype;
     if(!ondisconnect)
