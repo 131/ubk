@@ -88,7 +88,7 @@ module.exports = new Class({
     var lnk = merge({
       host : this.options.server_hostaddr,
       port : this.options.server_port,
-      servername : this.options.server_hostaddr.toLowerCase(),
+      servername : this.options.server_hostname.toLowerCase(),
     }, this._tls);
 
 
