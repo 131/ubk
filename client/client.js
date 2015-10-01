@@ -12,7 +12,6 @@ module.exports = new Class({
   Binds : [
     'receive',
     'send',
-    'write',
     'call_rpc',
     'respond',
     ],
@@ -41,12 +40,6 @@ module.exports = new Class({
       this.call_stack[quid] = callback;
 
     this.write(query);
-  },
-
-  // Low level method to send JSON data
-  write : function(json){
-    this._socket.write(JSON.stringify(json));
-    this._socket.write(String.fromCharCode(this.Delimiter));
   },
 
 
