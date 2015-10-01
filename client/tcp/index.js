@@ -2,7 +2,8 @@ var Class = require('uclass');
 var Options = require('uclass/options');
 var guid    = require('mout/random/guid');
 var indexOf = require('mout/array/indexOf');
-var merge = require('mout/object/merge');
+var merge   = require('mout/object/merge');
+var client  = require('../client')
 
 
 
@@ -13,17 +14,15 @@ var util = require('util'),
 
 
 module.exports = new Class({
-  Implements : [Options, require("uclass/events")],
+  Implements : [Options, require("uclass/events"), client],
   Binds : [
     'connect',
     'build_tls_socket',
     'build_net_socket',
     'receive',
-    'send',
     'write',
 
     'call',
-    'call_rpc',
 
     '_dispatch',
     'base_command',
@@ -51,7 +50,6 @@ module.exports = new Class({
 
   // Namespaces callbacks
   namespaces : {},
-  call_stack : {},
 
   // Logger
   log : console,
@@ -154,28 +152,6 @@ module.exports = new Class({
     });
   },
 
-  respond : function(query, response){
-    query.response = response;
-    this.write(query);
-  },
-
-
-  // Send a command with some args to the server
-  send : function(ns, cmd, args, callback){
-    var quid = guid();
-
-    var query = {
-      ns   : ns,
-      cmd  : cmd,
-      quid : quid,  
-      args : args
-    };
-
-    if(callback)
-      this.call_stack[quid] = callback;
-
-    this.write(query);
-  },
 
   // Low level method to send JSON data
   write : function(json){
@@ -197,7 +173,8 @@ module.exports = new Class({
         this.log.error("Parsing response failed: "+e);
       }
 
-      this._dispatch(data);
+      this.onMessage(data);
+
     }
   },
 
@@ -238,13 +215,6 @@ module.exports = new Class({
   },
 
 
-  call_rpc : function(ns, cmd, args, callback){
-    this.send(ns, cmd, args, function(response){
-      callback.apply(null, response);
-    });
-  },
-
-
   register_rpc : function(ns, cmd, task){
     var self = this;
     var callback = function(query){
@@ -281,13 +251,6 @@ module.exports = new Class({
 
     if(true || ! (data.cmd == "ping" && data.ns == "base") ) {
       this.log.info("[%s] received >>", this.client_key, data);
-    }
-
-    // Local call stack
-    if(data.quid in this.call_stack) {
-      this.call_stack[data.quid](data.response);
-      delete this.call_stack[data.quid];
-      return;
     }
 
     // Use valid namespaced callback
