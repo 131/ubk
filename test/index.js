@@ -150,7 +150,7 @@ describe("Basic server/client chat for webSocket", function(){
             done();
           });
         });
-        client.connect(function(){console.log('client connect')});
+       client.connect(function(){console.log('client connect')});
 
     })
 
