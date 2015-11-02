@@ -44,14 +44,16 @@ describe("Basic server/client chat", function(){
         //very simple RPC design
         client.register_rpc("math", "sum", function(a, b, chain){
             //heavy computational operation goes here
-          chain(a + b);
+          chain(null, a + b);
         });
+
 
         server.on('base:registered_client', function(device){
           device = server.get_client(device.client_key);
-          device.call_rpc("math", "sum", [2, 4], function(reponse){
+          device.call_rpc("math", "sum", [2, 4], function(error, response){
+            expect(error).not.to.be.ok();
             server.off('base:registered_client');
-            expect(reponse).to.be(6);
+            expect(response).to.be(6);
             device.disconnect();
             done();
           });
@@ -70,7 +72,7 @@ describe("Basic server/client chat", function(){
           client.register_rpc("math", "sum", function(a, b, chain){
             var r = a + b + i;
             console.log("doing math in client %s#%s is %s", client.client_key, i, r);
-            chain(r);
+            chain(null, r);
           });
           clients.push(client);
         });
@@ -83,9 +85,10 @@ describe("Basic server/client chat", function(){
 
           console.log("new device", device.client_key, i);
 
-          device.call_rpc("math", "sum", [2, 4], function(reponse){
+          device.call_rpc("math", "sum", [2, 4], function(error, response){
+
             console.log('aaaaaa' , i)
-            expect(reponse).to.be(6 + i);
+            expect(response).to.be(6 + i);
             checks[i] = true;
             device.disconnect();
 
@@ -137,15 +140,15 @@ describe("Basic server/client chat for webSocket", function(){
         //very simple RPC design
         client.register_rpc("math", "sum", function(a, b, chain){
             //heavy computational operation goes here
-          chain(a + b);
+          chain(null, a + b);
         });
 
 
         server.on('base:registered_client', function(device){
           device = server.get_client(device.client_key);
-          device.call_rpc("math", "sum", [2, 4], function(reponse){
+          device.call_rpc("math", "sum", [2, 4], function(error, response){
             server.off('base:registered_client');
-            expect(reponse).to.be(6);
+            expect(response).to.be(6);
             device.disconnect();
             done();
           });
@@ -153,6 +156,7 @@ describe("Basic server/client chat for webSocket", function(){
        client.connect(function(){console.log('client connect')});
 
     })
+
 
 /*
      /*it("should support multiple clients", function(done){
@@ -164,7 +168,7 @@ describe("Basic server/client chat for webSocket", function(){
           client.register_rpc("math", "sum", function(a, b, chain){
             var r = a + b + i;
             console.log("doing math in client %s#%s is %s", client.client_key, i, r);
-            chain(r);
+            chain(null, r);
           });
           clients.push(client);
         });
@@ -177,8 +181,8 @@ describe("Basic server/client chat for webSocket", function(){
 
           console.log("new device", device.client_key, i);
 
-          device.call_rpc("math", "sum", [2, 4], function(reponse){
-            expect(reponse).to.be(6 + i);
+          device.call_rpc("math", "sum", [2, 4], function(error, response){
+            expect(response).to.be(6 + i);
             checks[i] = true;
             device.disconnect();
             if(Object.keys(checks).length == clients.length)
