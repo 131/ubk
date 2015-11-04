@@ -3,7 +3,7 @@ var Options   = require('uclass/options');
 var guid    = require('mout/random/guid');
 
 var client  = require('../client');
-var cmdsDispatcher  = require('../../cmdsDispatcher');
+var cmdsDispatcher  = require('../../lib/cmdsDispatcher');
 var WebSocket = require('ws');
 
 

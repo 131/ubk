@@ -10,7 +10,7 @@ var each    = require('mout/object/forOwn');
 var merge   = require('mout/object/merge');
 var wsServer= require('ws').Server
 var http    = require('http');
-var cmdsDispatcher = require('../cmdsDispatcher')
+var cmdsDispatcher = require('../lib/cmdsDispatcher')
 
 var Server = module.exports = new Class({
   Implements : [ require("uclass/events"), Options, cmdsDispatcher],

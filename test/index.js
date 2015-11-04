@@ -5,9 +5,9 @@ var async  = require('async')
 var stripStart = require('nyks/string/stripStart');
 var range   = require('mout/array/range');
 
-var Server = require('../lib/server');
-var Client = require('../lib/client/tcp');
-var ClientWs = require('../lib/client/ws');
+var Server = require('../server');
+var Client = require('../client/tcp');
+var ClientWs = require('../client/ws');
 
 var http   = require('http');
 

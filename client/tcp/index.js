@@ -7,7 +7,7 @@ var indexOf = require('mout/array/indexOf');
 var merge   = require('mout/object/merge');
 
 var client  = require('../client')
-var cmdsDispatcher  = require('../../cmdsDispatcher')
+var cmdsDispatcher  = require('../../lib/cmdsDispatcher')
 
 module.exports = new Class({
   Implements : [Options, require("uclass/events"), client, cmdsDispatcher],
