@@ -25,6 +25,7 @@ module.exports = new Class({
   options : {
     server_hostaddr : '127.0.0.1',
     server_port     : 8000,
+    registration_parameters : {},
   },
 
   // Network protocol
@@ -112,7 +113,8 @@ module.exports = new Class({
     this._socket = socket_method(function() {
       self.log.info('Client network connected');
       // Directly send register
-      self.send('base', 'register', {client_key : self.client_key}, function(){
+      self.send('base', 'register', merge({client_key : self.client_key}, self.options.registration_parameters), function(){
+
         chain();
         self.log.info('Client has been registered');
 
