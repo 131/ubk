@@ -56,6 +56,8 @@ module.exports = new Class({
       return;
     }
 
+    this.emit("message", data);
+
     this._dispatch(this, data);
   },
 
