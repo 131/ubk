@@ -1,10 +1,11 @@
-var Class = require('uclass');
+var Class   = require('uclass');
 var Options = require('uclass/options');
 var net     = require('net');
 var tls     = require('tls');
 var guid    = require('mout/random/guid');
 var indexOf = require('mout/array/indexOf');
 var merge   = require('mout/object/merge');
+var once    = require('nyks/function/once');
 
 var client  = require('../client')
 var cmdsDispatcher  = require('../../lib/cmdsDispatcher')
@@ -102,6 +103,8 @@ module.exports = new Class({
     if(!ondisconnect)
       ondisconnect = Function.prototype;
 
+      ondisconnect = once(ondisconnect);
+      chain        = once(chain);
     // Secured or clear method ?
     var is_secured    = !!(this._tls.key && this._tls.cert);
     var socket_method = is_secured ? this.build_tls_socket : this.build_net_socket;
@@ -122,14 +125,14 @@ module.exports = new Class({
       });
     });
 
-    this._socket.on('error' , function(err) {
+    this._socket.once('error' , function(err) {
       self.log.warn("cant connect to server" ,JSON.stringify(err)) ;
       ondisconnect();
     });
 
     // Bind datas
     this._socket.on('data', this.receive);
-    this._socket.on('end', function() {
+    this._socket.once('end', function() {
       self.log.info('Client disconnected');
       ondisconnect();
     });
@@ -138,8 +141,12 @@ module.exports = new Class({
 
   // Low level method to send JSON data
   write : function(json){
-    this._socket.write(JSON.stringify(json));
-    this._socket.write(String.fromCharCode(this.Delimiter));
+    try {
+      this._socket.write(JSON.stringify(json));
+      this._socket.write(String.fromCharCode(this.Delimiter));
+    } catch (e) {
+      console.log("can't write in the socket" , e) ;
+    } 
   },
 
   // Received some data
