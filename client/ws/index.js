@@ -14,6 +14,7 @@ module.exports = new Class({
     'receive',
     'connect',
     'write',
+    'disconnect',
     'base_command'
   ],
 
@@ -31,15 +32,29 @@ module.exports = new Class({
   connect : function(chain, ondeconnection){
     var self = this ;
     this.socket = new WebSocket(this.url) ;
-    this.socket.onclose = once(ondeconnection);
+ 
     this.socket.onmessage = this.receive ;
 
     var onconnection = function(){
       self.send('base', 'register', {client_key : self.client_key}, function(){
         chain();
         console.log('Client has been registered');
+        var connected = true ;
+        self._heartbeat =  setInterval(function(){
+          if(!connected)
+            return self.disconnect();
+          connected = false;
+          self.send("base" , "ping" , {}, function(response){
+            connected = true ;
+          })
+        }, 10000)
       });
     }
+    
+    this.socket.onclose = once(function(){
+      ondeconnection()
+      clearInterval(self._heartbeat);
+    });
 
     onconnection = once(onconnection);
 
@@ -61,6 +76,14 @@ module.exports = new Class({
   base_command : function(query){
     // Just response to ping.
       return this.respond(query, "pong");
+  },
+
+  disconnect : function(){
+    try {
+      this.socket.close();
+    } catch(e) {
+      console.log("cant't close socket : "+e);
+    }
   }
 
 });

@@ -45,7 +45,7 @@ var Server = module.exports = new Class({
   initialize:function(options) {
 
     this.setOptions(options);
-
+    
     if(this.options.secured) {
       var tls_options = {
           requestCert: true,
@@ -59,6 +59,9 @@ var Server = module.exports = new Class({
       this.tcp_server = net.createServer(this.new_tcp_client);
     }
 
+     this.register_cmd("base" , "ping" , function(device, data){
+      device.respond(data , "pong");
+     })
   },
 
   get_client : function(client_key){

@@ -19,6 +19,7 @@ module.exports = new Class({
     'build_net_socket',
     'receive',
     'write',
+    'disconnect',
     'base_command',
   ],
 
@@ -121,12 +122,23 @@ module.exports = new Class({
         chain();
         self.log.info('Client has been registered');
 
+        var connected = true ;
+        self._heartbeat =  setInterval(function(){
+          if(!connected)
+            return self.disconnect();
+          connected = false;
+          self.send("base" , "ping" , {}, function(response){
+            connected = true ;
+          })
+        }, 10000)
+
         self.emit("registered");
       });
     });
 
     this._socket.once('error' , function(err) {
       self.log.warn("cant connect to server" ,JSON.stringify(err)) ;
+      clearInterval(self._heartbeat);
       ondisconnect();
     });
 
@@ -134,6 +146,7 @@ module.exports = new Class({
     this._socket.on('data', this.receive);
     this._socket.once('end', function() {
       self.log.info('Client disconnected');
+      clearInterval(self._heartbeat);
       ondisconnect();
     });
   },
@@ -171,6 +184,15 @@ module.exports = new Class({
   base_command : function(client, query){
     // Just response to ping.
       return client.respond(query, "pong");
+  },
+  
+   disconnect:function(){
+   
+   try {
+      this._socket.destroy();
+    } catch(e) {
+      console.log("cant't close socket : "+e);
+    }
   },
 
 
