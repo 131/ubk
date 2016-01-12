@@ -1,4 +1,3 @@
-var ws = require('ws') ;
 var guid    = require('mout/random/guid');
 var Class   = require('uclass');
 
