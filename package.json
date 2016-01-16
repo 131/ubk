@@ -22,15 +22,15 @@
   },
   "homepage": "https://github.com/131/ubk",
   "dependencies": {
-    "mout": "^0.11.0",
-    "uclass": "^2.0.5",
-    "ws": "^0.8.0"
+    "mout": "^0.11.1",
+    "nyks": "^2.3.0",
+    "uclass": "^2.0.7",
+    "ws": "^0.8.1"
   },
   "devDependencies": {
     "async": "^1.4.2",
     "expect.js": "^0.3.1",
     "istanbul": "^0.3.18",
-    "mocha": "^2.2.5",
-    "nyks": "^1.0.4"
+    "mocha": "^2.2.5"
   }
 }
