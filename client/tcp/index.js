@@ -20,6 +20,7 @@ module.exports = new Class({
     'receive',
     'write',
     'disconnect',
+    'export_json',
     'base_command',
   ],
 
@@ -176,6 +177,17 @@ module.exports = new Class({
         this.log.error("Parsing response failed: "+e);
       }
       this.onMessage(data);
+    }
+  },
+  
+   export_json : function(){
+    var lnk = this._socket;
+    
+    return {
+      type    : 'tcp',
+      address : lnk.remoteAddress,
+      port    : lnk.remotePort,     
+      network : lnk.address()
     }
   },
 
