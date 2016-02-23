@@ -38,7 +38,7 @@ var Server = module.exports = new Class({
     'secured'       : false,
     'server_port'   : 8000,
     'socket_port'   : 8001,
-    'heartbeat_interval' : 1000 * 10,
+    'heartbeat_interval' : 1000 * 20,
   },
 
 
