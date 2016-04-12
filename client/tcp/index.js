@@ -182,7 +182,8 @@ module.exports = new Class({
   
    export_json : function(){
     var lnk = this._socket;
-    
+    if(!lnk)
+      return null
     return {
       type    : 'tcp',
       address : lnk.remoteAddress,
