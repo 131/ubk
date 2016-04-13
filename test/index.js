@@ -7,7 +7,11 @@ var range   = require('mout/array/range');
 
 var Server = require('../server');
 var Client = require('../client/tcp');
+
+global.WebSocket = require('ws');
+
 var ClientWs = require('../client/ws');
+
 
 var http   = require('http');
 
