@@ -4,7 +4,7 @@ var guid    = require('mout/random/guid');
 var once    = require('nyks/function/once');
 var client  = require('../client');
 var cmdsDispatcher  = require('../../lib/cmdsDispatcher');
-var WebSocket = require('ws');
+
 
 
 module.exports = new Class({
