@@ -22,9 +22,9 @@
   },
   "homepage": "https://github.com/131/ubk",
   "dependencies": {
-    "mout": "^0.11.1",
-    "nyks": "^2.9.0",
-    "uclass": "^2.0.7",
+    "mout": "^1.0.0",
+    "nyks": "^2.26.0",
+    "uclass": "^2.1.0",
     "ws": "^1.1.0"
   },
   "devDependencies": {
