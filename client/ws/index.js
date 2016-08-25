@@ -2,6 +2,7 @@ var Class = require('uclass');
 var Options   = require('uclass/options');
 var guid    = require('mout/random/guid');
 var once    = require('nyks/function/once');
+var merge   = require('mout/object/merge');
 var client  = require('../client');
 var cmdsDispatcher  = require('../../lib/cmdsDispatcher');
 
@@ -21,8 +22,12 @@ module.exports = new Class({
   url : '',
   socket : null,
   client_key : null,
+  options : {
+    registration_parameters : {},
+  },
 
-  initialize : function(url) {
+  initialize : function(url , options) {
+    this.setOptions(options || {});
     this.url = url.replace('http','ws') ;
     this.client_key  = guid();
     // Always handle base
@@ -36,7 +41,7 @@ module.exports = new Class({
     this.socket.onmessage = this.receive ;
 
     var onconnection = function(){
-      self.send('base', 'register', {client_key : self.client_key}, function(){
+      self.send('base', 'register', merge({client_key : self.client_key}, self.options.registration_parameters), function(){
         chain();
         console.log('Client has been registered');
         var connected = true ;
