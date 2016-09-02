@@ -70,9 +70,10 @@ module.exports = new Class({
 
     // Setup TLS connection
     var lnk = merge({
-      host : this.options.server_hostaddr,
-      port : this.options.server_port,
-      servername : this.options.server_hostname.toLowerCase(),
+      host               : this.options.server_hostaddr,
+      port               : this.options.server_port,
+      rejectUnauthorized : false,
+      servername         : this.options.server_hostname.toLowerCase(),
     }, this._tls);
 
 
