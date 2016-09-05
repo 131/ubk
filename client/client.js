@@ -1,9 +1,8 @@
 "use strict";
 
-var Class = require('uclass');
+var Class   = require('uclass');
 var guid    = require('mout/random/guid');
-
-
+var EVENT_SOMETHING_APPEND = "change_append";
 
 module.exports = new Class({
   Binds : [
@@ -26,17 +25,9 @@ module.exports = new Class({
   // Send a command with some args to the server
   send : function(ns, cmd, args, callback){
     var quid = guid();
-
-    var query = {
-      ns   : ns,
-      cmd  : cmd,
-      quid : quid,
-      args : args
-    };
-
+    var query = { ns, cmd, quid, args};
     if(callback)
-      this._call_stack[quid] = callback;
-
+      this._call_stack[quid] = { callback, ns, cmd };
     this.write(query);
   },
 
@@ -50,8 +41,11 @@ module.exports = new Class({
     this.log.info("Received >>");
     this.log.info(data);
     // Local call stack
-    if(data.quid in this._call_stack) {
-      this._call_stack[data.quid](data.response, data.error);
+    var callback = this._call_stack[data.quid];
+
+    if(callback) {
+      callback.callback(data.response, data.error);
+      this.emit(EVENT_SOMETHING_APPEND, callback.ns, callback.cmd)
       delete this._call_stack[data.quid];
       return;
     }
