@@ -76,22 +76,24 @@ describe("Basic server/client chat", function(){
   it("should test for promise support", function(done){
     var client = new Client({server_port:port});
 
-    client.connect(function*() {
-      var hello = yield client.send("base", "echo", "Hello");
-      expect(hello).to.eql("Hello");
+    client.connect(function() {
+      co(function*(){
+        var hello = yield client.send("base", "echo", "Hello");
+        expect(hello).to.eql("Hello");
 
-      try {
-        yield client.send("base", "crash");
-        expect("Never be here").to.eql("true");
-      } catch(error){
-        expect(error).to.eql("This is an error");
-      }
+        try {
+          yield client.send("base", "crash");
+          expect("Never be here").to.eql("true");
+        } catch(error){
+          expect(error).to.eql("This is an error");
+        }
 
-      done();
+        done();
 
-    }, detach(function(error) {
+      }).catch(detach(function(error) {
         throw error;
-    }));
+      }));
+    });
 
   })
 

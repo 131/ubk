@@ -1,5 +1,5 @@
 "use strict";
-const co      = require('co');
+
 const Class   = require('uclass');
 const Options = require('uclass/options');
 const net     = require('net');
@@ -8,6 +8,7 @@ const guid    = require('mout/random/guid');
 const indexOf = require('mout/array/indexOf');
 const merge   = require('mout/object/merge');
 const once    = require('nyks/function/once');
+const detach  = require('nyks/function/detach');
 
 const client  = require('../client')
 const cmdsDispatcher  = require('../../lib/cmdsDispatcher')
@@ -120,12 +121,11 @@ module.exports = new Class({
     this._buffer = new Buffer(0);
 
     this._socket = socket_method(function(){
-      co(function *(){
-        self.log.info('Client network connected');
-        // Directly send register
-        yield self.send('base', 'register', merge({client_key : self.client_key}, self.options.registration_parameters));
-
-        yield co(chain);
+      self.log.info('Client network connected');
+      // Directly send register
+      var opts = merge({client_key : self.client_key}, self.options.registration_parameters);
+      self.send('base', 'register', opts).then(function(){
+        chain();
 
         self.log.info('Client has been registered');
 
@@ -140,7 +140,7 @@ module.exports = new Class({
         }, 10000)
 
         self.emit("registered");
-      }).catch(ondisconnect);
+      }).catch(detach(function(err){ throw err }));
     });
 
 
