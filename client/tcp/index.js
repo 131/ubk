@@ -1,5 +1,5 @@
 "use strict";
-
+const co      = require('co');
 const Class   = require('uclass');
 const Options = require('uclass/options');
 const net     = require('net');
@@ -118,12 +118,15 @@ module.exports = new Class({
     this.log.info("Connecting as %s", this.client_key);
 
     this._buffer = new Buffer(0);
-    this._socket = socket_method(function() {
-      self.log.info('Client network connected');
-      // Directly send register
-      self.send('base', 'register', merge({client_key : self.client_key}, self.options.registration_parameters), function(){
 
-        chain();
+    this._socket = socket_method(function(){
+      co(function *(){
+        self.log.info('Client network connected');
+        // Directly send register
+        yield self.send('base', 'register', merge({client_key : self.client_key}, self.options.registration_parameters));
+
+        yield co(chain);
+
         self.log.info('Client has been registered');
 
         var connected = true ;
@@ -137,8 +140,9 @@ module.exports = new Class({
         }, 10000)
 
         self.emit("registered");
-      });
+      }).catch(ondisconnect);
     });
+
 
     this._socket.once('error' , function(err) {
       self.log.warn("cant connect to server" ,JSON.stringify(err)) ;

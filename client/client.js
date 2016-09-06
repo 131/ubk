@@ -2,7 +2,8 @@
 
 const Class   = require('uclass');
 const guid    = require('mout/random/guid');
-const Events =  require('eventemitter-co');
+const Events  = require('eventemitter-co');
+const defer   = require('nyks/promise/defer');
 
 const EVENT_SOMETHING_APPEND = "change_append";
 
@@ -12,7 +13,6 @@ module.exports = new Class({
   Binds : [
     'receive',
     'send',
-    'call_rpc',
     'respond',
     ],
 
@@ -28,18 +28,27 @@ module.exports = new Class({
 
   // Send a command with some args to the server
   send : function(ns, cmd, args, callback){
+
+    var promise = defer();
     var quid = guid();
     var query = { ns, cmd, quid, args};
-    if(callback)
-      this._call_stack[quid] = { callback, ns, cmd };
+
+    if(callback) {
+      let resolve = promise.resolve, reject = promise.reject;
+
+        //yes, it is flipped
+      promise = promise.then(callback).catch(function(error){ callback(null, error) });
+
+      promise.reject  = reject;
+      promise.resolve = resolve;
+    }
+
+    this._call_stack[quid] = { ns, cmd, promise };
     this.write(query);
+
+    return promise;
   },
 
-  call_rpc : function(ns, cmd, args, callback){
-    this.send(ns, cmd, args, function(response, error){
-      callback.call(null, error, response);
-    });
-  },
 
   onMessage : function(data){
     this.log.info("Received >>");
@@ -48,7 +57,10 @@ module.exports = new Class({
     var callback = this._call_stack[data.quid];
 
     if(callback) {
-      callback.callback(data.response, data.error);
+       if(data.error)
+        callback.promise.reject(data.error);
+      else callback.promise.resolve(data.response);
+
       this.emit(EVENT_SOMETHING_APPEND, callback.ns, callback.cmd)
       delete this._call_stack[data.quid];
       return;
