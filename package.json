@@ -4,7 +4,8 @@
   "description": "micro message broker",
   "main": "index.js",
   "scripts": {
-    "test": "node node_modules/istanbul/lib/cli.js  cover node_modules/mocha/bin/_mocha"
+    "test": "node node_modules/istanbul/lib/cli.js  cover node_modules/mocha/bin/_mocha",
+    "coveralls" : "npm install coveralls && istanbul cover ./node_modules/mocha/bin/_mocha --report lcovonly -- -R spec && node ./node_modules/coveralls/bin/coveralls.js < ./coverage/lcov.info && rm -rf ./coverage"
   },
   "repository": {
     "type": "git",
