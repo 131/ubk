@@ -37,3 +37,6 @@ Exupery style. (You will not make it any smaller or simplier)
     *payload : client
   "base:unregistered_client", broadcasted to all clients on client disconnection
     *payload : client
+
+
+[![Build Status](https://travis-ci.org/131/ubk.svg?branch=master)](https://travis-ci.org/131/ubk)
