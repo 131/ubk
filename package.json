@@ -26,7 +26,8 @@
     "mout": "^1.0.0",
     "nyks": "^2.31.0",
     "uclass": "^2.4.0",
-    "ws": "^1.1.0"
+    "ws": "^1.1.0",
+    "eventemitter-co": "^1.0.1"
   },
   "devDependencies": {
     "async": "^2.0.1",

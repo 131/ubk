@@ -1,10 +1,14 @@
 "use strict";
 
-var Class   = require('uclass');
-var guid    = require('mout/random/guid');
-var EVENT_SOMETHING_APPEND = "change_append";
+const Class   = require('uclass');
+const guid    = require('mout/random/guid');
+const Events =  require('eventemitter-co');
+
+const EVENT_SOMETHING_APPEND = "change_append";
 
 module.exports = new Class({
+  Implements : [Events],
+
   Binds : [
     'receive',
     'send',

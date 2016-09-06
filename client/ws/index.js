@@ -1,15 +1,18 @@
-var Class = require('uclass');
-var Options   = require('uclass/options');
-var guid    = require('mout/random/guid');
-var once    = require('nyks/function/once');
-var merge   = require('mout/object/merge');
-var client  = require('../client');
-var cmdsDispatcher  = require('../../lib/cmdsDispatcher');
+"use strict";
+
+
+const Class = require('uclass');
+const Options   = require('uclass/options');
+const guid    = require('mout/random/guid');
+const once    = require('nyks/function/once');
+const merge   = require('mout/object/merge');
+const client  = require('../client');
+const cmdsDispatcher  = require('../../lib/cmdsDispatcher');
 
 
 
 module.exports = new Class({
-  Implements : [Options, require("uclass/events"), client, cmdsDispatcher],
+  Implements : [Options, client, cmdsDispatcher],
 
   Binds : [
     'receive',

@@ -1,17 +1,19 @@
-var Class   = require('uclass');
-var Options = require('uclass/options');
-var net     = require('net');
-var tls     = require('tls');
-var guid    = require('mout/random/guid');
-var indexOf = require('mout/array/indexOf');
-var merge   = require('mout/object/merge');
-var once    = require('nyks/function/once');
+"use strict";
 
-var client  = require('../client')
-var cmdsDispatcher  = require('../../lib/cmdsDispatcher')
+const Class   = require('uclass');
+const Options = require('uclass/options');
+const net     = require('net');
+const tls     = require('tls');
+const guid    = require('mout/random/guid');
+const indexOf = require('mout/array/indexOf');
+const merge   = require('mout/object/merge');
+const once    = require('nyks/function/once');
+
+const client  = require('../client')
+const cmdsDispatcher  = require('../../lib/cmdsDispatcher')
 
 module.exports = new Class({
-  Implements : [Options, require("uclass/events"), client, cmdsDispatcher],
+  Implements : [Options, client, cmdsDispatcher],
 
   Binds : [
     'connect',

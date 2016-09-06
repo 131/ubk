@@ -68,10 +68,14 @@ describe("Basic server/client chat", function(){
 
 
    it("should support multiple clients", function(done){
-        var pfx = 'client_', clients = [];
+        var pfx = 'client_', clients = [], connectedClients = 0;
 
         range(0,10).forEach( function(i){
           var client = new Client({server_port:port, client_key:pfx + i});
+
+          client.once("registered", function(){
+            connectedClients ++;
+          });
 
           client.register_rpc("math", "sum", function(a, b, chain){
             var r = a + b + i;
@@ -91,14 +95,15 @@ describe("Basic server/client chat", function(){
 
           device.call_rpc("math", "sum", [2, 4], function(error, response){
 
-            console.log('aaaaaa' , i)
             expect(response).to.be(6 + i);
             checks[i] = true;
             device.disconnect();
 
             if(Object.keys(checks).length == clients.length){
               server.off('base:registered_client');
-              done();}
+              expect(connectedClients).to.eql(clients.length);
+              done();
+            }
           });
         });
         clients.forEach(function(client){ client.connect()});
