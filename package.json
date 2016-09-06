@@ -4,7 +4,7 @@
   "description": "micro message broker",
   "main": "index.js",
   "scripts": {
-    "test": "node node_modules/istanbul/lib/cli.js  cover node_modules/mocha/bin/_mocha test/"
+    "test": "node node_modules/istanbul/lib/cli.js  cover node_modules/mocha/bin/_mocha"
   },
   "repository": {
     "type": "git",
@@ -23,12 +23,12 @@
   "homepage": "https://github.com/131/ubk",
   "dependencies": {
     "mout": "^1.0.0",
-    "nyks": "^2.26.0",
-    "uclass": "^2.1.0",
+    "nyks": "^2.31.0",
+    "uclass": "^2.4.0",
     "ws": "^1.1.0"
   },
   "devDependencies": {
-    "async": "^1.4.2",
+    "async": "^2.0.1",
     "expect.js": "^0.3.1",
     "istanbul": "^0.3.18",
     "mocha": "^2.2.5"
