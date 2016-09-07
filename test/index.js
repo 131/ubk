@@ -20,6 +20,12 @@ var http   = require('http');
 var port = 3000;
 var server = new Server({server_port:port});
 
+function cothrow(generator){
+  co(generator).catch(detach(function(error) {
+    throw error;
+  }));
+}
+
 describe("Basic server/client chat", function(){
 
   it("must start the server", function(done){
@@ -40,59 +46,26 @@ describe("Basic server/client chat", function(){
 
 
 
-  it("should trigger client echo", function(done){
-    var client = new Client({server_port:port});
-
-    client.connect(function(){
-      client.send("base", "echo", "Hi !", function(response, error){
-        expect(response).to.be("Hi !");
-        expect(error).not.to.be.ok();
-        done();
-      });
-    });
-  })
-
-
-
-
-  it("should trigger client send error", function(done){
-    var client = new Client({server_port:port});
-
-    client.connect(function(){
-      client.send("base", "crash", {}, function(response, error){
-        expect(error).to.be("This is an error");
-        expect(response).not.to.be.ok();
-        done();
-      });
-    });
-  })
-
-
-
-
-
-
-
-  it("should test for promise support", function(done){
+  it("should test simple send", function(done){
     var client = new Client({server_port:port});
 
     client.connect(function() {
-      co(function*(){
+
+      cothrow(function*(){
         var hello = yield client.send("base", "echo", "Hello");
         expect(hello).to.eql("Hello");
 
         try {
           yield client.send("base", "crash");
-          expect("Never be here").to.eql("true");
+          expect().fail("Should have crash by now")
         } catch(error){
           expect(error).to.eql("This is an error");
         }
 
         done();
 
-      }).catch(detach(function(error) {
-        throw error;
-      }));
+      });
+
     });
 
   })

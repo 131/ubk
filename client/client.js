@@ -26,22 +26,12 @@ module.exports = new Class({
     this.write(query);
   },
 
-  // Send a command with some args to the server
-  send : function(ns, cmd, args, callback){
+  send : function(ns, cmd, args){
 
     var promise = defer();
     var quid = guid();
     var query = { ns, cmd, quid, args};
 
-    if(callback) {
-      let resolve = promise.resolve, reject = promise.reject;
-
-        //yes, it is flipped
-      promise = promise.then(callback).catch(function(error){ callback(null, error) });
-
-      promise.reject  = reject;
-      promise.resolve = resolve;
-    }
 
     this._call_stack[quid] = { ns, cmd, promise };
     this.write(query);
