@@ -1,51 +1,62 @@
-var Class   = require('uclass');
-var TCPTransport = require('./transport/tcp.js');
-var guid    = require('mout/random/guid');
+"use strict";
+
+
+const Class   = require('uclass');
+const guid    = require('mout/random/guid');
+const defer   = require('nyks/promise/defer');
+const Events  = require('eventemitter-co');
+const debug   = require('debug');
+
+const TCPTransport = require('./transport/tcp.js');
+//const WSTransport  = require('./transport/ws.js');
 
 
 var Client = module.exports = new Class({
-  Implements : [require("uclass/events")],
-  Binds : [
-    'receive',
-    'register',
-    'disconnect',
-    'send',
-    'call_rpc',
-    'write',
-  ],
+  Implements : [Events],
+
+  Binds : [ 'receive', 'disconnect'],
 
   // Identification
-  client_key : null,
+  client_key        : null,
   registration_time : null,
 
   // Network : tcp or websocket
   network_client : null,
 
   // Commands sent
-  call_stack : {},
+  _call_stack : {},
 
-  log : console,
+  log : {
+    info : debug("server:client")
+  },
 
-  initialize : function(stream, registration){
+  initialize : function(type, stream, chainConnect, chainDisconnect){
     var self = this;
-    this.network_client = new TCPTransport(stream, this.receive, this.disconnect);
+    this.once("disconnected", chainDisconnect);
 
-    // Auto disconnect on timeout of 5s.
-    var timeout = setTimeout(function(c) {
-      console.log('Client timeout');
+    //if(type == "ws")
+    //  this.network_client = new WSTransport(stream, this.receive, this.disconnect);
+
+    if(type == "tcp")
+      this.network_client = new TCPTransport(stream, this.receive, this.disconnect);
+
+    var registrationTimeout = setTimeout(function() {
+      self.log.info('Client registration timeout');
       if(self.network_client)
         self.network_client.disconnect();
     }, 5000);
 
-    this.once("registered", function(){clearTimeout(timeout) ;});
+    this.once("registered", function(){ clearTimeout(registrationTimeout)});
 
     var once = false;
     this.registration = function(query){
-      if(once || !registration) return; once  = true;
+      if(once || !chainConnect)
+        return;
+      once  = true;
+
       self.registration_time  = Date.now();
 
-
-      registration(self, function(err){
+      chainConnect(self, function(err){
           if(err)
             return; //leaving the timeout to kill us
           self.respond(query, "ok");
@@ -86,17 +97,16 @@ var Client = module.exports = new Class({
   // React to received data
   receive : function(data){
     // Debug
-    console.log("Received ", data, " from client", this.client_key);
+    this.log.info("Received ", data, " from client", this.client_key);
 
     // Got new client id
-    if( data.ns == 'base' && data.cmd == 'register'){
+    if( data.ns == 'base' && data.cmd == 'register')
       return this.register(data);
-    }
 
-    // Use stored callback from call stack
-    if(data.quid in this.call_stack) {
-      this.call_stack[data.quid](data.response);
-      delete this.call_stack[data.quid];
+    var callback = this._call_stack[data.quid];
+    if(callback) {
+      callback.promise.chain(null, data.response);
+      delete this._call_stack[data.quid];
       return;
     }
 
@@ -105,30 +115,28 @@ var Client = module.exports = new Class({
     this.emit('received_cmd', this, data);
   },
 
-
-  call_rpc : function(ns, cmd, args, callback){
-    this.send(ns, cmd, args, function(response, error){
-      callback.call(null, error, response);
-    });
+  signal : function(ns, cmd, args) {
+    var query = {ns, cmd, args };
+    this.write(query);
   },
 
-  // Send a command to client, callback is not mandatory for signals
-  send : function(ns, cmd, args, callback){
+
+  send : function(ns, cmd/*, payload[, xargs..] */) {
+    var xargs = [].slice.call(arguments, 2),
+      args  = xargs.shift();
+
     if(!(ns == 'base' && cmd == 'ping'))
-      console.log("Send msg '%s:%s' to %s ", ns, cmd, this.client_key);
+      this.log.info("Send msg '%s:%s' to %s ", ns, cmd, this.client_key);
 
+    var promise = defer();
     var quid = guid();
+    var query = {ns, cmd, quid, args, xargs };
 
-    var query = {
-      ns : ns,
-      cmd : cmd,
-      quid : quid,
-      args : args
-    };
+    this._call_stack[quid] = { ns, cmd, promise };
 
-    if(callback)
-      this.call_stack[quid] = callback;
     this.write(query);
+
+    return promise;
   },
 
   // Low Level send raw JSON
@@ -160,7 +168,7 @@ var Client = module.exports = new Class({
     client.disconnect();
 
     this.emit('disconnected', this);
-    console.log("Client %s disconnected", this.client_key);
+    this.log.info("Client %s disconnected", this.client_key);
   },
 
 

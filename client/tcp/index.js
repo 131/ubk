@@ -1,31 +1,23 @@
 "use strict";
 
-const Class   = require('uclass');
-const Options = require('uclass/options');
 const net     = require('net');
 const tls     = require('tls');
+
+const Class   = require('uclass');
+const Options = require('uclass/options');
 const guid    = require('mout/random/guid');
-const indexOf = require('mout/array/indexOf');
 const merge   = require('mout/object/merge');
+const indexOf = require('mout/array/indexOf');
 const once    = require('nyks/function/once');
-const detach  = require('nyks/function/detach');
 
-const client  = require('../client')
-const cmdsDispatcher  = require('../../lib/cmdsDispatcher')
 
-module.exports = new Class({
-  Implements : [Options, client, cmdsDispatcher],
+const Client  = require('../')
 
-  Binds : [
-    'connect',
-    'build_tls_socket',
-    'build_net_socket',
-    'receive',
-    'write',
-    'disconnect',
-    'export_json',
-    'base_command',
-  ],
+
+var TCPClient = new Class({
+  Implements : [Options, Client],
+  Binds : ['receive', 'disconnect'],
+
 
   // Server configuration
   options : {
@@ -40,7 +32,6 @@ module.exports = new Class({
   _socket : null,
   _buffer : null,
   _tls    : {},
-
 
 
   initialize:function(options, server_hostaddr) {
@@ -58,14 +49,11 @@ module.exports = new Class({
 
     options.server_hostaddr  = server_hostaddr || options.server_hostaddr;
     options.server_hostname  = options.server_hostname || options.server_hostaddr;
-
-    // Always handle base
-    this.register_cmd('base', 'ping', this.base_command);
   },
 
 
   // Initialier a crypted TLS socket
-  build_tls_socket : function(callback){
+  build_tls_socket : function(callback) {
     if(!this._tls.key)
       throw new Error("Missing private key");
     if(!this._tls.cert)
@@ -88,7 +76,7 @@ module.exports = new Class({
 
 
   // Initialize a cleartext tcp socket
-  build_net_socket : function(callback){
+  build_net_socket : function(callback) {
 
     var lnk = {
       host : this.options.server_hostaddr,
@@ -99,74 +87,36 @@ module.exports = new Class({
   },
 
   // Connect to the server
-  connect : function(chain, ondisconnect, server_addr) {
-
+  connect : function(chainConnect, chainDisconnect, server_addr) {
     var self = this;
 
     this.options.server_hostaddr = server_addr || this.options.server_hostaddr ;
-    if(!chain)
-      chain = Function.prototype;
-    if(!ondisconnect)
-      ondisconnect = Function.prototype;
+    this._buffer = new Buffer(0);
 
-      ondisconnect = once(ondisconnect);
-      chain        = once(chain);
     // Secured or clear method ?
     var is_secured    = !!(this._tls.key && this._tls.cert);
     var socket_method = is_secured ? this.build_tls_socket : this.build_net_socket;
 
-    // Connect using TLS
-    this.log.info("Connecting as %s", this.client_key);
+    this._onDisconnect = once(chainDisconnect || Function.prototype);
+    chainConnect       = once(chainConnect || Function.prototype);
 
-    this._buffer = new Buffer(0);
-
-    this._socket = socket_method(function(){
-      self.log.info('Client network connected');
-      // Directly send register
-      var opts = merge({client_key : self.client_key}, self.options.registration_parameters);
-      self.send('base', 'register', opts).then(function(){
-        chain();
-
-        self.log.info('Client has been registered');
-
-        var connected = true ;
-        self._heartbeat =  setInterval(function(){
-          if(!connected)
-            return self.disconnect();
-          connected = false;
-          self.send("base" , "ping" , {}, function(response){
-            connected = true ;
-          })
-        }, 10000)
-
-        self.emit("registered");
-      }).catch(detach(function(err){ throw err }));
+    this._socket = socket_method.call(this, function() {
+      self._doConnect(chainConnect);
     });
 
-
-    this._socket.once('error' , function(err) {
-      self.log.warn("cant connect to server" ,JSON.stringify(err)) ;
-      clearInterval(self._heartbeat);
-      ondisconnect();
-    });
-
-    // Bind datas
     this._socket.on('data', this.receive);
-    this._socket.once('end', function() {
-      self.log.info('Client disconnected');
-      clearInterval(self._heartbeat);
-      ondisconnect();
-    });
+    this._socket.once('end', this.disconnect);
+    this._socket.once('error' , this.disconnect);
   },
 
 
   // Low level method to send JSON data
-  write : function(json){
+  write : function(json) {
     try {
       this._socket.write(JSON.stringify(json));
       this._socket.write(String.fromCharCode(this.Delimiter));
     } catch (e) {
-      console.log("can't write in the socket" , e) ;
+      this.log.info("can't write in the socket" , e) ;
     } 
   },
 
@@ -183,37 +133,37 @@ module.exports = new Class({
       } catch(e) {
         this.log.error("Parsing response failed: "+e);
       }
-      this.onMessage(data);
+      this._onMessage(data);
     }
   },
   
-   export_json : function(){
+  export_json : function() {
     var lnk = this._socket;
     if(!lnk)
       return null
+
     return {
       type    : 'tcp',
       address : lnk.remoteAddress,
       port    : lnk.remotePort,     
       network : lnk.address()
-    }
+    };
   },
 
-
-  // Base protocol handler
-  base_command : function(client, query){
-    // Just response to ping.
-      return client.respond(query, "pong");
-  },
   
-   disconnect:function(){
-   
-   try {
+  disconnect : function() {
+    Client.prototype.disconnect.call(this);
+
+    try {
       this._socket.destroy();
     } catch(e) {
-      console.log("cant't close socket : "+e);
+      this.log.info("cant't close socket : "+e);
     }
+
+    this._onDisconnect();
   },
 
 
 });
+
+module.exports = TCPClient;

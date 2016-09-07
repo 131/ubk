@@ -2,7 +2,7 @@
   "name": "ubk",
   "version": "2.2.0",
   "description": "micro message broker",
-  "main": "index.js",
+  "main": "nope.js",
   "scripts": {
     "test": "node node_modules/istanbul/lib/cli.js  cover node_modules/mocha/bin/_mocha",
     "coveralls": "npm install coveralls && istanbul cover ./node_modules/mocha/bin/_mocha --report lcovonly -- -R spec && node ./node_modules/coveralls/bin/coveralls.js < ./coverage/lcov.info && rm -rf ./coverage"
@@ -23,17 +23,18 @@
   },
   "homepage": "https://github.com/131/ubk",
   "dependencies": {
+    "debug": "^2.2.0",
     "eventemitter-co": "^1.0.1",
     "mout": "^1.0.0",
     "nyks": "^2.31.0",
-    "co": "^4.6.0",
-    "uclass": "^2.4.0",
-    "ws": "^1.1.0"
+    "uclass": "^2.4.0"
   },
   "devDependencies": {
     "async": "^2.0.1",
     "expect.js": "^0.3.1",
+    "co": "^4.6.0",
     "istanbul": "^0.3.18",
-    "mocha": "^2.2.5"
+    "mocha": "^2.2.5",
+    "ws": "^1.1.0"
   }
 }

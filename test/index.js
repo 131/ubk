@@ -1,21 +1,18 @@
 "use strict";
 
-const expect = require('expect.js')
-const async  = require('async')
+
+const expect = require('expect.js');
+const async  = require('async');
+const co       = require('co');
+
 const stripStart = require('nyks/string/stripStart');
 const detach   = require('nyks/function/detach');
-const range   = require('mout/array/range');
-const co    = require('co');
+const range    = require('mout/array/range');
 
 const Server = require('../server');
 const Client = require('../client/tcp');
 
-global.WebSocket = require('ws');
 
-const ClientWs = require('../client/ws');
-
-
-var http   = require('http');
 
 var port = 3000;
 var server = new Server({server_port:port});
@@ -33,25 +30,25 @@ describe("Basic server/client chat", function(){
       done();
     });
 
-    server.register_cmd('base', 'crash', function(device, query){
-      device.respond(query, null, "This is an error");
+    server.register_rpc('base', 'crash', function* () {
+      throw "This is an error"
     });
 
-
-    server.register_cmd('base', 'echo', function(device, query){
-      device.respond(query, query.args);
+    server.register_rpc('base', 'echo', function* (payload){
+      return Promise.resolve(payload);
     });
 
   });
 
 
-
-  it("should test simple send", function(done){
+  it("should test simple chat", function(done){
+    this.timeout(0);
     var client = new Client({server_port:port});
 
     client.connect(function() {
 
-      cothrow(function*(){
+      cothrow(function*() {
+
         var hello = yield client.send("base", "echo", "Hello");
         expect(hello).to.eql("Hello");
 
@@ -61,9 +58,7 @@ describe("Basic server/client chat", function(){
         } catch(error){
           expect(error).to.eql("This is an error");
         }
-
         done();
-
       });
 
     });
@@ -91,35 +86,30 @@ describe("Basic server/client chat", function(){
     var client = new Client({server_port:port});
 
     //very simple RPC design
-    client.register_rpc("math", "sum", function(a, b, chain){
+    client.register_rpc("math", "sum", function* (a, b){
         //heavy computational operation goes here
-      chain(null, a + b);
+      return Promise.resolve(a + b);
     });
 
 
     server.on('base:registered_client', function(device){
       device = server.get_client(device.client_key);
-      device.send("math", "sum", [2, 4], function(response, error){
-        expect(error).not.to.be.ok();
+
+      cothrow(function*() {
+        var response = yield device.send("math", "sum", 2, 4);
         server.off('base:registered_client');
         expect(response).to.be(6);
         device.disconnect();
         done();
       });
+
     });
     client.connect();
 
   })
 
 
-
-
-
-
-
-
-
- it("should support multiple clients", function(done){
+  it("should support multiple clients", function(done) {
     var pfx = 'client_', clients = [], connectedClients = 0;
 
     range(0,10).forEach( function(i){
@@ -129,11 +119,12 @@ describe("Basic server/client chat", function(){
         connectedClients ++;
       });
 
-      client.register_rpc("math", "sum", function(a, b, chain){
+      client.register_rpc("math", "sum", function*(a, b) {
         var r = a + b + i;
         console.log("doing math in client %s#%s is %s", client.client_key, i, r);
-        chain(null, r);
+        return Promise.resolve(r);
       });
+
       clients.push(client);
     });
 
@@ -145,7 +136,7 @@ describe("Basic server/client chat", function(){
 
       console.log("new device", device.client_key, i);
 
-      device.send("math", "sum", [2, 4], function(response, error){
+      device.send("math", "sum", 2, 4).then(function(response){
 
         expect(response).to.be(6 + i);
         checks[i] = true;
@@ -159,11 +150,9 @@ describe("Basic server/client chat", function(){
         }
       });
     });
+
     clients.forEach(function(client){ client.connect()});
   });
-
-
-
 
 
 

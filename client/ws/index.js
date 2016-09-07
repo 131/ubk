@@ -1,26 +1,19 @@
 "use strict";
 
 
-const Class = require('uclass');
-const Options   = require('uclass/options');
+const Class   = require('uclass');
+const Options = require('uclass/options');
 const guid    = require('mout/random/guid');
 const once    = require('nyks/function/once');
 const merge   = require('mout/object/merge');
-const client  = require('../client');
-const cmdsDispatcher  = require('../../lib/cmdsDispatcher');
+const Client  = require('../');
 
 
 
-module.exports = new Class({
-  Implements : [Options, client, cmdsDispatcher],
+const WSClient = new Class({
+  Implements : [Options, Client],
+  Binds : ['receive', 'disconnect'],
 
-  Binds : [
-    'receive',
-    'connect',
-    'write',
-    'disconnect',
-    'base_command'
-  ],
 
   url : '',
   socket : null,
@@ -33,45 +26,26 @@ module.exports = new Class({
     this.setOptions(options || {});
     this.url = url.replace('http','ws') ;
     this.client_key  = guid();
-    // Always handle base
-    this.register_cmd('base', 'ping', this.base_command);
   },
 
-  connect : function(chain, ondeconnection){
+  connect : function(chainConnect, chainDisconnect) {
     var self = this ;
+
+    this._onDisconnect = once(chainDisconnect || Function.prototype);
+    chainConnect       = once(chainConnect || Function.prototype);
+
     this.socket = new WebSocket(this.url) ;
  
-    this.socket.onmessage = this.receive ;
 
-    var onconnection = function(){
-      self.send('base', 'register', merge({client_key : self.client_key}, self.options.registration_parameters), function(){
-        chain();
-        console.log('Client has been registered');
-        var connected = true ;
-        self._heartbeat =  setInterval(function(){
-          if(!connected)
-            return self.disconnect();
-          connected = false;
-          self.send("base" , "ping" , {}, function(response){
-            connected = true ;
-          })
-        }, 10000)
-      });
-    }
-    
-    this.socket.onclose = once(function(){
-      ondeconnection()
-      clearInterval(self._heartbeat);
-    });
+    this.socket.onopen = function() {
+      self._doConnect(chainConnect);
+    };
 
-    onconnection = once(onconnection);
-
-    if(this.socket.readyState)
-      onconnection();
-    this.socket.onopen = onconnection;
+    this.socket.onmessage = this.receive;
+    this.socket.onclose   = this.disconnect;
   },
 
-  write : function(data){
+  write : function(data) {
     this.socket.send(JSON.stringify(data));
   },
 
@@ -81,17 +55,20 @@ module.exports = new Class({
     this.onMessage(data);
   },
 
-  base_command : function(query){
-    // Just response to ping.
-      return this.respond(query, "pong");
-  },
 
   disconnect : function(){
+    Client.prototype.disconnect.call(this);
+
     try {
       this.socket.close();
     } catch(e) {
-      console.log("cant't close socket : "+e);
+      this.log.info("cant't close socket : "+e);
     }
+
+    this._onDisconnect();
   }
 
 });
+
+
+module.exports = WSClient;

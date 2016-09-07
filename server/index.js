@@ -1,23 +1,32 @@
-var tls   = require('tls'),
-    util  = require('util'),
-    net   = require('net');
+"use strict";
 
-var Class   = require('uclass');
-var Options = require('uclass/options');
-var Client  = require('./client.js');
-var clientWs= require('./clientWs.js');
-var each    = require('mout/object/forOwn');
-var merge   = require('mout/object/merge');
-var wsServer= require('ws').Server
-var http    = require('http');
-var cmdsDispatcher = require('../lib/cmdsDispatcher')
+const tls   = require('tls');
+const net   = require('net');
+const debug = require('debug');
 
-var Server = module.exports = new Class({
-  Implements : [ require("uclass/events"), Options, cmdsDispatcher],
 
+const Class   = require('uclass');
+const Options = require('uclass/options');
+const Client  = require('./client.js');
+const each    = require('async-co/each');
+const merge   = require('mout/object/merge');
+const forIn   = require('mout/object/forIn');
+const Events  = require('eventemitter-co');
+
+const EVENT_SOMETHING_APPEND = "change_append";
+
+
+const evtmsk = function(ns, cmd) {
+  return `_${ns}:${cmd}`;
+}
+
+const Server = new Class({
+  Implements : [ Events, Options],
 
   Binds : [
     'start',
+    '_onMessage',
+
     'heartbeat',
     'build_tls_server',
     'build_net_server',
@@ -41,6 +50,9 @@ var Server = module.exports = new Class({
     'heartbeat_interval' : 1000 * 20,
   },
 
+  log : {
+    info : debug("server")
+  },
 
   initialize:function(options) {
 
@@ -59,76 +71,68 @@ var Server = module.exports = new Class({
       this.tcp_server = net.createServer(this.new_tcp_client);
     }
 
-     this.register_cmd("base" , "ping" , function(device, data){
-      device.respond(data , "pong");
-     })
+    this.register_rpc('base', 'ping', function *(){
+      return Promise.resolve("pong");
+    });
+
   },
 
   get_client : function(client_key){
     return this._clientsList[client_key];
   },
 
-  start_socket_server : function(chain){
-    var self = this;
-    var web_sockets = new wsServer({
-      server: http.createServer().listen(self.options.socket_port, chain),
-      path : '/',
-    });
-    web_sockets.on('connection', this.new_websocket_client);
-  },
-
 
   start : function(chain) {
-    var self = this,
-        server_port = this.options.server_port;
+    var self = this;
+    var server_port = this.options.server_port;
 
     this._clientHeartBeat = setInterval(this.heartbeat,  this.options.heartbeat_interval);
 
-    console.log("Server is in %s mode", this.options.secured ? "SECURED" : "NON SECURED");
+    this.log.info("Server is in %s mode", this.options.secured ? "SECURED" : "NON SECURED");
 
-    this.tcp_server.listen(server_port, function(){
-      console.log("Started TCP server for clients on port %d", server_port);
+    this.tcp_server.listen(server_port, function() {
+      self.log.info("Started TCP server for clients on port %d", server_port);
       chain();
     });
   },
 
-  heartbeat:function(){
+  heartbeat: function() {
+    var self = this;
 
-    each(this._clientsList, function(client){
+    forIn(this._clientsList, function(client) {
       // Check failures
       if(client.ping_failure) {
-        console.log("client " + client.client_key + " failed ping challenge, assume disconnected");
+        self.log.info("client " + client.client_key + " failed ping challenge, assume disconnected");
         return client.disconnect();
       }
 
       // Send ping
       client.ping_failure = true;
-      client.send('base', 'ping', {}, function(response){
-        client.ping_failure = false;
+      client.send('base', 'ping').then(function(response) {
+        client.ping_failure = (response == "pong");
       });
     });
   },
 
 
-
   // Build new client from tcp stream
   new_tcp_client : function(stream){
-    var client = new Client(stream, this.register_client);
+    var client = new Client('tcp', stream, this.register_client);
     client.once('disconnected', this.lost_client);
-    client.on('received_cmd', this._dispatch);
+    client.on('received_cmd', this._onMessage);
   },
 
   // Build new client from web socket stream
   new_websocket_client : function(stream){
-    var client = new clientWs(stream, this.lost_client);
-    client.on('received_cmd', this._dispatch);
+    var client = new client('ws', stream, null, this.lost_client);
+    client.on('received_cmd', this._onMessage);
     this.register_client(client, function(){}); // direct register, we are connected !
   },
 
   // Register an active client, with id
   // Used by new_tcp_client
 
-  register_client : function(client, chain){
+  register_client : function(client, chain) {
 
     // Check id
     if(!client.client_key){
@@ -145,29 +149,56 @@ var Server = module.exports = new Class({
     // Save client
     this._clientsList[client.client_key] = client;
 
-    // Propagate
 
     this.broadcast('base', 'registered_client', client.export_json());
-
     chain();
   },
 
   lost_client : function(client){
     // Remove from list
-    console.log("Lost client");
+    this.log.info("Lost client");
     delete this._clientsList[client.client_key];
     this.broadcast('base', 'unregistered_client', {client_key : client.client_key });
-
   },
 
 
-  broadcast:function(ns, cmd, payload){
-  console.log("BROADCASTING ", ns, cmd);
-    each(this._clientsList, function(client){
-      client.send(ns, cmd, payload);
+  register_cmd : function(ns, cmd, callback) {
+    this.off( evtmsk(ns, cmd) );
+    this.on( evtmsk(ns, cmd) , callback);
+  },
+
+  register_rpc : function(ns, cmd, callback, ctx){
+    var self = this;
+
+    this.register_cmd(ns, cmd, function* (client, query) {
+      var response, err;
+      try {
+        var args = [query.args].concat(query.xargs || []);
+        response = yield callback.apply(ctx || this, args);
+      } catch(error) { err = ""+ error; }
+
+      client.respond(query, response, err);
+    });
+  },
+
+  _onMessage : function(client, data){
+    this.emit(evtmsk(data.ns, data.cmd), client, data);
+    this.emit(EVENT_SOMETHING_APPEND, data.ns, data.cmd)
+  },
+
+
+  broadcast : function (ns, cmd, payload) {
+    this.log.info("BROADCASTING ", ns, cmd);
+
+    
+    forIn(this._clientsList, function(client) {
+      client.signal(ns, cmd, payload);
     });
 
-    this.emit(util.format("%s:%s", ns, cmd), payload);
+    this.emit(`${ns}:${cmd}`, payload);
   },
 
 });
+
+
+module.exports = Server;
