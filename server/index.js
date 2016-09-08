@@ -8,7 +8,6 @@ const debug = require('debug');
 const Class   = require('uclass');
 const Options = require('uclass/options');
 const Client  = require('./client.js');
-const each    = require('async-co/each');
 const merge   = require('mout/object/merge');
 const forIn   = require('mout/object/forIn');
 const Events  = require('eventemitter-co');
