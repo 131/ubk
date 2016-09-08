@@ -110,8 +110,7 @@ const Client =  new Class({
 
 
   _onMessage : function(data) {
-    this.log.info("Received >>");
-    this.log.info(data);
+    this.log.info("Received", data);
     // Local call stack
     var callback = this._call_stack[data.quid];
 

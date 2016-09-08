@@ -52,7 +52,7 @@ const WSClient = new Class({
   // Received a message
   receive : function(message) {
     var data = JSON.parse(message.data) ;
-    this.onMessage(data);
+    this._onMessage(data);
   },
 
 

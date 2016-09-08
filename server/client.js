@@ -8,7 +8,7 @@ const Events  = require('eventemitter-co');
 const debug   = require('debug');
 
 const TCPTransport = require('./transport/tcp.js');
-//const WSTransport  = require('./transport/ws.js');
+const WSTransport  = require('./transport/ws.js');
 
 
 var Client = module.exports = new Class({
@@ -27,15 +27,19 @@ var Client = module.exports = new Class({
   _call_stack : {},
 
   log : {
-    info : debug("server:client")
+    info  : debug("server:client"),
+    error : debug("server:client")
   },
 
   initialize : function(type, stream, chainConnect, chainDisconnect){
     var self = this;
+
     this.once("disconnected", chainDisconnect);
 
-    //if(type == "ws")
-    //  this.network_client = new WSTransport(stream, this.receive, this.disconnect);
+    if(type == "ws") {
+      this.network_client = new WSTransport(stream, this.receive, this.disconnect);
+      this.client_key     = this.network_client.id;
+    }
 
     if(type == "tcp")
       this.network_client = new TCPTransport(stream, this.receive, this.disconnect);
@@ -159,7 +163,9 @@ var Client = module.exports = new Class({
 
 
   // Network client got disconnected, propagate
-  disconnect : function(){
+  disconnect : function(error) {
+
+    this.log.error("Disconnecting", error);
     if(!this.network_client)
       return;
 

@@ -26,7 +26,7 @@ const WSTransport = new Class({
     this.id = guid() ;
     this.connected = true;
 
-      //https://github.com/Automattic/socket.io/issues/1737
+
     this.initial_lnk = this.export_json();
 
     this.onMessage =  message ;
@@ -35,9 +35,21 @@ const WSTransport = new Class({
        message(JSON.parse(data));
     });
 
-    this.stream.on('error',  disconnected);
-    this.stream.on('close',  disconnected);
-    this.stream.on('disconnect', disconnected);
+    this.stream.on("error", function(){
+      console.log("ON error");
+
+    });
+    this.stream.on("close", function(){
+      console.log("ON close");
+
+    });
+    this.stream.on("disconnect", function(){
+      console.log("ON disconnect");
+
+    });
+    this.stream.once('error',  disconnected);
+    this.stream.once('close',  disconnected);
+    this.stream.once('disconnect', disconnected);
 
   },
 
@@ -65,7 +77,7 @@ const WSTransport = new Class({
   },
 
   disconnect : function(){
-    this.stream.close(function(){});
+    this.stream.close();
   }
 
 })

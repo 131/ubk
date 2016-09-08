@@ -123,7 +123,7 @@ const Server = new Class({
 
   // Build new client from web socket stream
   new_websocket_client : function(stream){
-    var client = new client('ws', stream, null, this.lost_client);
+    var client = new Client('ws', stream, null, this.lost_client);
     client.on('received_cmd', this._onMessage);
     this.register_client(client, function(){}); // direct register, we are connected !
   },
@@ -132,7 +132,7 @@ const Server = new Class({
   // Used by new_tcp_client
 
   register_client : function(client, chain) {
-
+    console.log("Registering");
     // Check id
     if(!client.client_key){
       client.disconnect();
@@ -189,7 +189,6 @@ const Server = new Class({
   broadcast : function (ns, cmd, payload) {
     this.log.info("BROADCASTING ", ns, cmd);
 
-    
     forIn(this._clientsList, function(client) {
       client.signal(ns, cmd, payload);
     });
