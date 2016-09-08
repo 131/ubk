@@ -1,9 +1,11 @@
-var Class   = require('uclass');
+"use strict";
 
-var guid    = require('mout/random/guid');
-var indexOf = require('mout/array/indexOf');
+const Class   = require('uclass');
+const guid    = require('mout/random/guid');
+const indexOf = require('mout/array/indexOf');
+const debug   = require('debug');
 
-module.exports = new Class({
+const TCPTransport = new Class({
   Binds : [
     'receive',
     'disconnect',
@@ -21,6 +23,10 @@ module.exports = new Class({
   secured   : false,
   client_key   : null,
 
+  log : {
+    info : debug("server:client:tcp")
+  },
+
   initialize : function(stream, message, disconnect){
     this._buffer = new Buffer(0);
 
@@ -37,7 +43,7 @@ module.exports = new Class({
       var cert       = this._stream.getPeerCertificate();
       this.client_key  = cert.subject.CN;
       this.secured   = true;
-      console.log("Connected using SSL cert " + this.client_key);
+      this.log.info("Connected using SSL cert " + this.client_key);
     } else {
       this.client_key  = guid();
     }
@@ -74,7 +80,7 @@ module.exports = new Class({
       try {
         data = JSON.parse(buff.toString());
       } catch(e) {
-        console.log("Bad data, not json", buff, "<raw>", buff.toString(), "</raw>");
+        this.log.info("Bad data, not json", buff, "<raw>", buff.toString(), "</raw>");
         continue;
       }
 
@@ -90,7 +96,7 @@ module.exports = new Class({
       this._stream.write(JSON.stringify(data));
       this._stream.write(String.fromCharCode(this.Delimiter));
     } catch(e) {
-      console.log("Failed to write in tcp client. "+e);
+      this.log.info("Failed to write in tcp client. "+e);
     }
   },
 
@@ -108,3 +114,6 @@ module.exports = new Class({
   },
 
 });
+
+
+module.exports = TCPTransport;
