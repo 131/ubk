@@ -48,6 +48,7 @@ describe("Basic server/client chat", function(){
     client.connect(function() {
 
       cothrow(function*() {
+
         var hello = yield client.send("base", "echo", "Hello");
         expect(hello).to.eql("Hello");
 
@@ -71,9 +72,15 @@ describe("Basic server/client chat", function(){
     var client = new Client({server_port:port});
 
     server.once('base:registered_client', function(device){
+
       device = server.get_client(device.client_key);
 
       cothrow(function*(){
+
+          //server should respond a simple ping event
+        var pong = yield client.send('base', 'ping');
+        expect(pong).to.eql("pong");
+
           //all device should respond to a ping event
         var pong = yield device.send("base", "ping");
         expect(pong).to.eql("pong");
