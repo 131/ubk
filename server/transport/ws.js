@@ -2,6 +2,7 @@
 
 
 const guid    = require('mout/random/guid');
+const once    = require('nyks/function/once');
 const Class   = require('uclass');
 
 const WSTransport = new Class({
@@ -13,43 +14,23 @@ const WSTransport = new Class({
     'export_json',
   ],
 
-  connected : false,
-  stream : null,
-  initial_lnk : null,
-  stream      : null,
+  _stream : null,
   id : '',
 
   initialize : function(stream, message, disconnected) {
 
     //this.id = stream.id;
-    this.stream = stream
+    this._stream = stream
     this.id = guid() ;
-    this.connected = true;
-
-
-    this.initial_lnk = this.export_json();
 
     this.onMessage =  message ;
+    this.onDisconnect = once(disconnected);
 
-    this.stream.on('message', function(data){
-       message(JSON.parse(data));
-    });
+    this._stream.on('message', this.receive);
 
-    this.stream.on("error", function(){
-      console.log("ON error");
-
-    });
-    this.stream.on("close", function(){
-      console.log("ON close");
-
-    });
-    this.stream.on("disconnect", function(){
-      console.log("ON disconnect");
-
-    });
-    this.stream.once('error',  disconnected);
-    this.stream.once('close',  disconnected);
-    this.stream.once('disconnect', disconnected);
+    this._stream.once('error',  this.disconnect);
+    this._stream.once('close',  this.disconnect);
+    this._stream.once('disconnect', this.disconnect);
 
   },
 
@@ -58,9 +39,9 @@ const WSTransport = new Class({
     return {
       type    : 'websocket',
       secured : false,
-      address : this.stream.upgradeReq.connection.remoteAddress,
-      port :  this.stream.upgradeReq.connection.remotePort,
-      network:  this.stream.upgradeReq.headers.host.split(':')[0] // ip:port (sometimes)
+      address : this._stream.upgradeReq.connection.remoteAddress,
+      port :  this._stream.upgradeReq.connection.remotePort,
+      network:  this.localAddress,
     }
   },
 
@@ -72,15 +53,23 @@ const WSTransport = new Class({
 
   // Send some data over the web socket
   send : function(data){
-    if(this.connected)
-      this.stream.send(JSON.stringify(data));
+    try {
+      this._stream.send(JSON.stringify(data));
+    } catch(e){
+      this.log.info("Failed to write in ws client. ", e);
+    }
   },
 
   disconnect : function(){
-    this.stream.close();
+
+    if(this._stream != null)
+      this._stream.close();
+    this._stream = null;
+
+    this.onDisconnect();
   }
 
-})
+});
 
 
 module.exports = WSTransport;

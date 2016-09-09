@@ -3,6 +3,7 @@
 const Class   = require('uclass');
 const guid    = require('mout/random/guid');
 const indexOf = require('mout/array/indexOf');
+const once    = require('nyks/function/once');
 const debug   = require('debug');
 
 const TCPTransport = new Class({
@@ -16,7 +17,6 @@ const TCPTransport = new Class({
   Delimiter : 27,
 
   _buffer    : null,
-  _connected : false,
   _stream    : null,
 
   // TLS
@@ -27,16 +27,18 @@ const TCPTransport = new Class({
     info : debug("server:client:tcp")
   },
 
-  initialize : function(stream, message, disconnect){
+  initialize : function(stream, message, disconnected){
     this._buffer = new Buffer(0);
 
     // Listen TCP Stream events
     this._stream      = stream;
+    this._stream.setNoDelay(true);
+
     this.onMessage    = message;
-    this.onDisconnect = disconnect;
+    this.onDisconnect = once(disconnected);
 
     this._stream.on('data', this.receive);
-    this._stream.on('error', this.disconnect);
+    this._stream.once('error', this.disconnect);
 
     // Load client cert when secured
     if(this._stream.encrypted != null){
@@ -66,7 +68,6 @@ const TCPTransport = new Class({
   // * send back to client via event
   receive : function(chars){
 
-    this._connected = true;
     var delimiter_pos;
     this._buffer = Buffer.concat([this._buffer, chars]);
 
@@ -96,17 +97,14 @@ const TCPTransport = new Class({
       this._stream.write(JSON.stringify(data));
       this._stream.write(String.fromCharCode(this.Delimiter));
     } catch(e) {
-      this.log.info("Failed to write in tcp client. "+e);
+      this.log.info("Failed to write in tcp client. ", e);
     }
   },
 
   // On error : Kill stream
   disconnect:function(){
-    if(!this._connected)
-      return; // avoid infinite loops
-    this._connected = false;
 
-    if(this._stream != null)
+    if(this._stream)
       this._stream.end();
     this._stream = null;
 
