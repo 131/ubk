@@ -138,15 +138,14 @@ var TCPClient = new Class({
   },
   
   export_json : function() {
-    var lnk = this._socket;
-    if(!lnk)
-      return null
+    if(!this._socket)
+      return {};
 
     return {
       type    : 'tcp',
-      address : lnk.remoteAddress,
-      port    : lnk.remotePort,     
-      network : lnk.address()
+      address : this._socket.remoteAddress,
+      port    : this._socket.remotePort,
+      network : this._socket.address()
     };
   },
 
@@ -156,6 +155,7 @@ var TCPClient = new Class({
 
     try {
       this._socket.destroy();
+      this._socket = null;
     } catch(e) {
       this.log.info("cant't close socket : "+e);
     }

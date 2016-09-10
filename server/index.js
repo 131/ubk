@@ -200,16 +200,15 @@ const Server = new Class({
 
     if(data.client_key) { //proxy
       this.log.info("proxy %s from %s to %s", data, client.client_key, data.client_key);
-
       var remote = this._clientsList[data.client_key], response, err;
       try {
         if(!remote)
-            throw "Missing device " + data.client_key;
+            throw `Bad client '${data.client_key}'`;
         response = yield remote.send.apply(remote, [data.ns, data.cmd, data.args].concat(data.xargs));
       } catch(error) {
         err = error;
       }
-      return device.respond(data, response, err);
+      return client.respond(data, response, err);
     }
 
     this.emit(evtmsk(data.ns, data.cmd), client, data);

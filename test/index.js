@@ -71,6 +71,12 @@ describe("Basic server/client chat", function(){
     var currentClients = Object.keys(server._clientsList).length;
     var client = new Client({server_port:port});
 
+
+    var network_challenge = null;
+    client.connect(function(){
+      network_challenge = client.export_json();
+    });
+
     server.once('base:registered_client', function(device){
       device = server.get_client(device.client_key);
 
@@ -84,15 +90,38 @@ describe("Basic server/client chat", function(){
         var pong = yield device.send("base", "ping");
         expect(pong).to.eql("pong");
 
+        var remote_network = device.export_json();
+        console.log({remote_network, network_challenge});
+
+        var lnkPort = remote_network.remoteAddress.port;
+        expect(lnkPort).to.be.ok();
+
+        expect(network_challenge).to.eql({
+          "address": "127.0.0.1",
+          "network": {
+            "address": "127.0.0.1",
+            "family": "IPv4",
+            "port": lnkPort,
+          },
+          "port": 3000,
+          "type": "tcp",
+        });
+
         expect(Object.keys(server._clientsList).length).to.be(currentClients + 1);
         device = server.get_client(device.client_key);
         device.disconnect();
+        expect(device.export_json().remoteAddress).to.eql({});
 
         expect(Object.keys(server._clientsList).length).to.be(currentClients);
-        done();
+
+          //now waiting for client to figure it as been disconnected
+        setTimeout(function(){
+          expect(client.export_json()).to.eql({});
+          done();
+        }, 100);
       });
     });
-    client.connect();
+
   })
 
 
