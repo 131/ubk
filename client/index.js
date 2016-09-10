@@ -88,7 +88,6 @@ const Client =  new Class({
     var opts = merge({client_key : self.client_key}, self.options.registration_parameters);
 
     self.send('base', 'register', opts).then(function(){
-      chain();
 
       self.log.info('Client has been registered');
 
@@ -104,6 +103,7 @@ const Client =  new Class({
         });
       }, 10000);
 
+      chain();
       self.emit("registered");
     }).catch(detach(function(err){ throw err }));
   },

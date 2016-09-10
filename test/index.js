@@ -42,8 +42,8 @@ describe("Basic server/client chat", function(){
 
 
   it("should test simple chat", function(done){
-    this.timeout(0);
     var client = new Client({server_port:port});
+    console.log("Connecting client");
 
     client.connect(function() {
 
@@ -72,7 +72,6 @@ describe("Basic server/client chat", function(){
     var client = new Client({server_port:port});
 
     server.once('base:registered_client', function(device){
-
       device = server.get_client(device.client_key);
 
       cothrow(function*(){
@@ -88,6 +87,7 @@ describe("Basic server/client chat", function(){
         expect(Object.keys(server._clientsList).length).to.be(currentClients + 1);
         device = server.get_client(device.client_key);
         device.disconnect();
+
         expect(Object.keys(server._clientsList).length).to.be(currentClients);
         done();
       });

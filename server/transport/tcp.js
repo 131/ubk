@@ -5,13 +5,12 @@ const guid    = require('mout/random/guid');
 const indexOf = require('mout/array/indexOf');
 const once    = require('nyks/function/once');
 const debug   = require('debug');
+const Events  = require('eventemitter-co');
+
 
 const TCPTransport = new Class({
-  Binds : [
-    'receive',
-    'disconnect',
-    'send',
-  ],
+  Implements : [Events],
+  Binds : [ '_feed', 'disconnect', ],
 
   // Network stuff
   Delimiter : 27,
@@ -27,17 +26,15 @@ const TCPTransport = new Class({
     info : debug("server:client:tcp")
   },
 
-  initialize : function(stream, message, disconnected){
+  initialize : function(stream) {
     this._buffer = new Buffer(0);
 
     // Listen TCP Stream events
     this._stream      = stream;
     this._stream.setNoDelay(true);
 
-    this.onMessage    = message;
-    this.onDisconnect = once(disconnected);
 
-    this._stream.on('data', this.receive);
+    this._stream.on('data', this._feed);
     this._stream.once('error', this.disconnect);
 
     // Load client cert when secured
@@ -51,22 +48,12 @@ const TCPTransport = new Class({
     }
   },
 
-  // Export client configuration
-  export_json : function(){
-    return {
-      type    : 'tcp',
-      address : this._stream.remoteAddress,
-      port    : this._stream.remotePort,
-      secured : this.secured,
-      name    : this.client_key,
-    }
-  },
 
   // Received some data
   // * add to buffer
   // * read until delimiter
   // * send back to client via event
-  receive : function(chars){
+  _feed : function(chars) {
 
     var delimiter_pos;
     this._buffer = Buffer.concat([this._buffer, chars]);
@@ -85,15 +72,30 @@ const TCPTransport = new Class({
         continue;
       }
 
+
       // Send to client
       if(data)
-        this.onMessage(data);
+        this.emit("transport_message", data);
+    }
+  },
+
+
+  export_json : function() {
+    if(!this._stream) //disconnected
+      return {};
+
+    return {
+      type    : 'tcp',
+      secured : this.secured,
+      address : this._stream.remoteAddress,
+      port    : this._stream.remotePort,
+      name    : this.client_key,
     }
   },
 
   // Send some data over the tcp stream
-  send : function(data){
-    try{
+  write : function(data) {
+    try {
       this._stream.write(JSON.stringify(data));
       this._stream.write(String.fromCharCode(this.Delimiter));
     } catch(e) {
@@ -102,13 +104,12 @@ const TCPTransport = new Class({
   },
 
   // On error : Kill stream
-  disconnect:function(){
-
+  disconnect:function() {
     if(this._stream)
       this._stream.end();
     this._stream = null;
 
-    this.onDisconnect();
+    this.emit("transport_disconnect");
   },
 
 });

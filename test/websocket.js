@@ -23,7 +23,7 @@ describe("Basic server/client chat for webSocket", function(){
   });
 
 
-  if(false) it("should allow client to connect", function(done){
+  it("should allow client to connect", function(done){
     var client = new ClientWs(wsUrl);
 
     server.once('base:registered_client', function(device){

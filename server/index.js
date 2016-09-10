@@ -74,6 +74,7 @@ const Server = new Class({
       return Promise.resolve("pong");
     });
 
+    this.register_cmd('base', 'register', this.register_client);
   },
 
   get_client : function(client_key){
@@ -89,7 +90,7 @@ const Server = new Class({
 
     this.log.info("Server is in %s mode", this.options.secured ? "SECURED" : "NON SECURED");
 
-    this.tcp_server.listen(server_port, function() {
+    this.tcp_server.listen({port:server_port, host:'0.0.0.0'}, function() {
       self.log.info("Started TCP server for clients on port %d", server_port);
       chain();
     });
@@ -116,48 +117,59 @@ const Server = new Class({
 
   // Build new client from tcp stream
   new_tcp_client : function(stream){
-    var client = new Client('tcp', stream, this.register_client);
+    this.log.info("Incoming tcp stream");
+    var client = new Client('tcp', stream);
     client.once('disconnected', this.lost_client);
     client.on('received_cmd', this._onMessage);
   },
 
   // Build new client from web socket stream
   new_websocket_client : function(stream){
-    var client = new Client('ws', stream, null, this.lost_client);
+    this.log.info("Incoming ws stream");
+    var client = new Client('ws', stream);
+    client.once('disconnected', this.lost_client);
     client.on('received_cmd', this._onMessage);
-    this.register_client(client, function(){}); // direct register, we are connected !
   },
 
-  // Register an active client, with id
-  // Used by new_tcp_client
 
-  register_client : function(client, chain) {
-    console.log("Registering");
-    // Check id
-    if(!client.client_key){
-      client.disconnect();
-      return chain("No id for client to register");
-    }
+  register_client : function* (client, query) {
+
+    client.client_key = query.args.client_key;
+    // Check SSL client cert matches
+    var exp = client.export_json();
+
+    if(exp.secured && exp.name != client.client_key)
+      return client.disconnect(`The cert '${exp.name}' does NOT match the given id '${client.client_key}'`);
+
+    if(!client.client_key)
+      return client.disconnect(`No id for client to register`);
 
     // Avoid conflicts
-    if(this._clientsList[client.client_key]){
-      client.disconnect();
-      return chain("TCP client "+client.client_key +" already exists, sorry");
-    }
+    if(this._clientsList[client.client_key])
+      return client.disconnect(`TCP client '${client.client_key}' already exists, sorry`);
 
     // Save client
     this._clientsList[client.client_key] = client;
 
-
+    client.respond(query, "ok");
+    client.emit("registered");  //re-export, and get proper registration_time
+    this.emit('registered_device', client, query.args);
     this.broadcast('base', 'registered_client', client.export_json());
-    chain();
   },
+
+
 
   lost_client : function(client){
     // Remove from list
     this.log.info("Lost client");
     delete this._clientsList[client.client_key];
+
+    this.emit('unregistered_device', client);
     this.broadcast('base', 'unregistered_client', {client_key : client.client_key });
+  },
+
+  unregister_cmd : function(ns, cmd) {
+    this.off( evtmsk(ns, cmd) );
   },
 
 
@@ -180,7 +192,26 @@ const Server = new Class({
     });
   },
 
-  _onMessage : function(client, data){
+  _onMessage : function* (client, data) {
+    var fullns = data.ns.split(":");
+
+    data.client_key = fullns[1]; //allow ns:device_key syntax
+    data.ns         = fullns[0]; //legacy behavior
+
+    if(data.client_key) { //proxy
+      this.log.info("proxy %s from %s to %s", data, client.client_key, data.client_key);
+
+      var remote = this._clientsList[data.client_key], response, err;
+      try {
+        if(!remote)
+            throw "Missing device " + data.client_key;
+        response = yield remote.send.apply(remote, [data.ns, data.cmd, data.args].concat(data.xargs));
+      } catch(error) {
+        err = error;
+      }
+      return device.respond(data, response, err);
+    }
+
     this.emit(evtmsk(data.ns, data.cmd), client, data);
     this.emit(EVENT_SOMETHING_APPEND, data.ns, data.cmd)
   },
