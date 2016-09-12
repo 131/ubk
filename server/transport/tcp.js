@@ -35,6 +35,7 @@ const TCPTransport = new Class({
 
 
     this._stream.on('data', this._feed);
+    this._stream.once('close', this.disconnect);
     this._stream.once('error', this.disconnect);
 
     // Load client cert when secured

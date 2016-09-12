@@ -16,7 +16,7 @@ const WSClient = new Class({
 
 
   url : '',
-  socket : null,
+  _socket : null,
   client_key : null,
   options : {
     registration_parameters : {},
@@ -34,19 +34,19 @@ const WSClient = new Class({
     this._onDisconnect = once(chainDisconnect || Function.prototype);
     chainConnect       = once(chainConnect || Function.prototype);
 
-    this.socket = new WebSocket(this.url) ;
+    this._socket = new WebSocket(this.url) ;
  
 
-    this.socket.onopen = function() {
+    this._socket.onopen = function() {
       self._doConnect(chainConnect);
     };
 
-    this.socket.onmessage = this.receive;
-    this.socket.onclose   = this.disconnect;
+    this._socket.onmessage = this.receive;
+    this._socket.onclose   = this.disconnect;
   },
 
   write : function(data) {
-    this.socket.send(JSON.stringify(data));
+    this._socket.send(JSON.stringify(data));
   },
 
   // Received a message
@@ -59,10 +59,9 @@ const WSClient = new Class({
   disconnect : function(error){
     Client.prototype.disconnect.call(this);
 
-    try {
-      this.socket.close();
-    } catch(e) {
-      this.log.info("cant't close socket : "+e);
+    if(this._socket) {
+      this._socket.close();
+      this._socket = null;
     }
 
     this._onDisconnect(error);

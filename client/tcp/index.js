@@ -153,11 +153,9 @@ var TCPClient = new Class({
   disconnect : function(error) {
     Client.prototype.disconnect.call(this);
 
-    try {
+    if(this._socket) {
       this._socket.destroy();
       this._socket = null;
-    } catch(e) {
-      this.log.info("cant't close socket : "+e);
     }
 
     this._onDisconnect(error);
