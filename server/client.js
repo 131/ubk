@@ -34,10 +34,8 @@ var Client = module.exports = new Class({
   initialize : function(type, stream) {
     var self = this;
 
-    if(type == "ws") {
+    if(type == "ws")
       this.transport  = new WSTransport(stream);
-      this.client_key = this.transport.id;
-    }
 
     if(type == "tcp")
       this.transport = new TCPTransport(stream);
@@ -126,8 +124,8 @@ var Client = module.exports = new Class({
     this.transport.write(query);
   },
 
-  disconnect : function(error) {
-    this.transport.disconnect();
+  disconnect : function(reason) {
+    this.transport.disconnect(reason);
   },
 
   disconnected : function(reason) {

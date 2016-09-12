@@ -116,23 +116,28 @@ const Server = new Class({
 
 
   // Build new client from tcp stream
-  new_tcp_client : function(stream){
+  new_tcp_client : function(stream) {
     this.log.info("Incoming tcp stream");
     var client = new Client('tcp', stream);
-    client.once('disconnected', this.lost_client);
-    client.on('received_cmd', this._onMessage);
+    client.once('received_cmd', this.register_client);
   },
 
   // Build new client from web socket stream
-  new_websocket_client : function(stream){
+  new_websocket_client : function(stream) {
     this.log.info("Incoming ws stream");
     var client = new Client('ws', stream);
-    client.once('disconnected', this.lost_client);
-    client.on('received_cmd', this._onMessage);
+    client.once('received_cmd', this.register_client);
   },
 
 
   register_client : function* (client, query) {
+
+      //can only register once...
+    if(query.ns != "base" || query.cmd != "register")
+      return client.disconnect("Un-expected registration query");
+
+    if(client.client_key)
+      return client.disconnect(`Already registered client '${client.client_key}'`);
 
     client.client_key = query.args.client_key;
     // Check SSL client cert matches
@@ -152,11 +157,14 @@ const Server = new Class({
     this._clientsList[client.client_key] = client;
 
     client.respond(query, "ok");
-    client.emit("registered");  //re-export, and get proper registration_time
+    client.once('disconnected', this.lost_client);
+    client.on('received_cmd', this._onMessage);
+
+      // THAT'S GREAT, LET'S NOTIFY EVERYBOOOOODYYYY
+    client.emit("registered", query.args);
     this.emit('registered_device', client, query.args);
     this.broadcast('base', 'registered_client', client.export_json());
-  },
-
+ },
 
 
   lost_client : function(client){

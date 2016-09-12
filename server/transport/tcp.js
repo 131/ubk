@@ -104,11 +104,14 @@ const TCPTransport = new Class({
   },
 
   // On error : Kill stream
-  disconnect:function() {
-    if(this._stream)
-      this._stream.end();
-    this._stream = null;
+  disconnect:function(reason) {
+    this.log.info("Disconnected client", reason);
 
+    if(!this._stream)
+      return;
+
+    this._stream.end();
+    this._stream = null;
     this.emit("transport_disconnect");
   },
 

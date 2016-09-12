@@ -23,10 +23,10 @@ describe("Basic server/client chat for webSocket", function(){
   });
 
 
-  it("should allow client to connect", function(done){
+  it("should allow client to connect", function(done) {
     var client = new ClientWs(wsUrl);
 
-    server.once('base:registered_client', function(device){
+    server.once('base:registered_client', function(device) {
       expect(Object.keys(server._clientsList).length).to.be(1);
       device = server.get_client(device.client_key);
       device.disconnect();

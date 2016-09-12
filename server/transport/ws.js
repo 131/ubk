@@ -1,24 +1,25 @@
 "use strict";
 
 
-const guid    = require('mout/random/guid');
 const once    = require('nyks/function/once');
 const Class   = require('uclass');
 const Events  = require('eventemitter-co');
+const debug   = require('debug');
+
 
 const WSTransport = new Class({
   Implements : [Events],
   Binds : [ 'disconnect', ],
 
   _stream : null,
-  id : '',
+
+  log : {
+    info : debug("server:client:ws")
+  },
 
   initialize : function(stream) {
 
-    //this.id = stream.id;
-    this._stream = stream
-    this.id = guid() ;
-
+    this._stream = stream;
 
     this._stream.on('message',  (data) => {
       this.emit("transport_message", JSON.parse(data));
@@ -51,13 +52,17 @@ const WSTransport = new Class({
     }
   },
 
-  disconnect : function() {
-    if(this._stream)
-      this._stream.close();
-    this._stream = null;
+  // On error : Kill stream
+  disconnect:function(reason) {
+    this.log.info("Disconnected client", reason);
 
+    if(!this._stream)
+      return;
+
+    this._stream.close();
+    this._stream = null;
     this.emit("transport_disconnect");
-  }
+  },
 
 });
 
