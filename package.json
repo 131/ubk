@@ -25,7 +25,7 @@
   "homepage": "https://github.com/131/ubk",
   "dependencies": {
     "debug": "^2.2.0",
-    "eventemitter-co": "^1.0.1",
+    "eventemitter-co": "^1.0.2",
     "mout": "^1.0.0",
     "nyks": "^2.31.2",
     "uclass": "^2.4.0"

@@ -56,7 +56,7 @@ const WSClient = new Class({
   },
 
 
-  disconnect : function(){
+  disconnect : function(error){
     Client.prototype.disconnect.call(this);
 
     try {
@@ -65,7 +65,7 @@ const WSClient = new Class({
       this.log.info("cant't close socket : "+e);
     }
 
-    this._onDisconnect();
+    this._onDisconnect(error);
   }
 
 });

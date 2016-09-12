@@ -105,7 +105,7 @@ const Client =  new Class({
 
       chain();
       self.emit("registered");
-    }).catch(detach(function(err){ throw err }));
+    }).catch(this.disconnect);
   },
 
 

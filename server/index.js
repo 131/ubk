@@ -132,26 +132,32 @@ const Server = new Class({
 
   register_client : function* (client, query) {
 
-      //can only register once...
-    if(query.ns != "base" || query.cmd != "register")
-      return client.disconnect("Un-expected registration query");
+    try {
+        //can only register once...
+      if(query.ns != "base" || query.cmd != "register")
+        throw `Un-expected registration query`;
 
-    if(client.client_key)
-      return client.disconnect(`Already registered client '${client.client_key}'`);
+      if(client.client_key)
+        throw `Already registered client '${client.client_key}'`;
 
-    client.client_key = query.args.client_key;
-    // Check SSL client cert matches
-    var exp = client.export_json();
+      client.client_key = query.args.client_key;
+      // Check SSL client cert matches
+      var exp = client.export_json();
 
-    if(exp.secured && exp.name != client.client_key)
-      return client.disconnect(`The cert '${exp.name}' does NOT match the given id '${client.client_key}'`);
+      if(exp.secured && exp.name != client.client_key)
+        throw `The cert '${exp.name}' does NOT match the given id '${client.client_key}'`;
 
-    if(!client.client_key)
-      return client.disconnect(`No id for client to register`);
+      if(!client.client_key)
+        throw `No id for client to register`;
 
-    // Avoid conflicts
-    if(this._clientsList[client.client_key])
-      return client.disconnect(`TCP client '${client.client_key}' already exists, sorry`);
+      // Avoid conflicts
+      if(this._clientsList[client.client_key])
+        throw `Client '${client.client_key}' already exists, sorry`;
+    } catch(err) {
+      if(typeof query == "object")
+        client.respond(query, null, err);
+      return client.disconnect();
+    }
 
     // Save client
     this._clientsList[client.client_key] = client;
