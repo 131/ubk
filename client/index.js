@@ -20,7 +20,8 @@ const Client =  new Class({
 
   _call_stack : {},
   log : {
-    info : debug("client")
+    error : debug("ubk:client"),
+    info  : debug("ubk:client")
   },
 
   initialize : function() {
@@ -104,7 +105,7 @@ const Client =  new Class({
       }, 10000);
 
       chain();
-      self.emit("registered");
+      self.emit("registered").catch(self.log.error);
     }).catch(this.disconnect);
   },
 
@@ -117,14 +118,14 @@ const Client =  new Class({
     if(callback) {
        callback.promise.chain(data.error, data.response);
 
-      this.emit(EVENT_SOMETHING_APPEND, callback.ns, callback.cmd)
+      this.emit(EVENT_SOMETHING_APPEND, callback.ns, callback.cmd).catch(this.log.error);
       delete this._call_stack[data.quid];
       return;
     }
 
-    this.emit("message", data);
-    this.emit(evtmsk(data.ns, data.cmd), this , data);
-    this.emit(EVENT_SOMETHING_APPEND, data.ns, data.cmd)
+    this.emit("message", data).catch(this.log.error);
+    this.emit(evtmsk(data.ns, data.cmd), this , data).catch(this.log.error);
+    this.emit(EVENT_SOMETHING_APPEND, data.ns, data.cmd).catch(this.log.error)
   },
 
   disconnect : function(){

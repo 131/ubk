@@ -14,7 +14,8 @@ const WSTransport = new Class({
   _stream : null,
 
   log : {
-    info : debug("server:client:ws")
+    info  : debug("ubk:server:client:ws"),
+    error : debug("ubk:server:client:ws"),
   },
 
   initialize : function(stream) {
@@ -22,7 +23,7 @@ const WSTransport = new Class({
     this._stream = stream;
 
     this._stream.on('message',  (data) => {
-      this.emit("transport_message", JSON.parse(data));
+      this.emit("transport_message", JSON.parse(data)).catch(this.log.error);
     });
 
     this._stream.once('error',  this.disconnect);
@@ -61,7 +62,7 @@ const WSTransport = new Class({
 
     this._stream.close();
     this._stream = null;
-    this.emit("transport_disconnect");
+    this.emit("transport_disconnect").catch(this.log.error);
   },
 
 });

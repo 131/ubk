@@ -23,7 +23,8 @@ const TCPTransport = new Class({
   client_key   : null,
 
   log : {
-    info : debug("server:client:tcp")
+    info  : debug("ubk:server:client:tcp"),
+    error : debug("ubk:server:client:tcp"),
   },
 
   initialize : function(stream) {
@@ -76,7 +77,7 @@ const TCPTransport = new Class({
 
       // Send to client
       if(data)
-        this.emit("transport_message", data);
+        this.emit("transport_message", data).catch(this.log.error);
     }
   },
 
@@ -113,7 +114,7 @@ const TCPTransport = new Class({
 
     this._stream.end();
     this._stream = null;
-    this.emit("transport_disconnect");
+    this.emit("transport_disconnect").catch(this.log.error);
   },
 
 });

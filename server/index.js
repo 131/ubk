@@ -50,7 +50,8 @@ const Server = new Class({
   },
 
   log : {
-    info : debug("server")
+    info  : debug("ubk:server"),
+    error : debug("ubk:server"),
   },
 
   initialize:function(options) {
@@ -167,8 +168,8 @@ const Server = new Class({
     client.on('received_cmd', this._onMessage);
 
       // THAT'S GREAT, LET'S NOTIFY EVERYBOOOOODYYYY
-    client.emit("registered", query.args);
-    this.emit('registered_device', client, query.args);
+    client.emit("registered", query.args).catch(this.log.error);
+    this.emit('registered_device', client, query.args).catch(this.log.error);
     this.broadcast('base', 'registered_client', client.export_json());
  },
 
@@ -178,7 +179,7 @@ const Server = new Class({
     this.log.info("Lost client");
     delete this._clientsList[client.client_key];
 
-    this.emit('unregistered_device', client);
+    this.emit('unregistered_device', client).catch(this.log.error);
     this.broadcast('base', 'unregistered_client', {client_key : client.client_key });
   },
 
@@ -225,8 +226,8 @@ const Server = new Class({
       return client.respond(data, response, err);
     }
 
-    this.emit(evtmsk(data.ns, data.cmd), client, data);
-    this.emit(EVENT_SOMETHING_APPEND, data.ns, data.cmd)
+    this.emit(evtmsk(data.ns, data.cmd), client, data).catch(this.log.error);
+    this.emit(EVENT_SOMETHING_APPEND, data.ns, data.cmd).catch(this.log.error);
   },
 
 
@@ -237,7 +238,7 @@ const Server = new Class({
       client.signal(ns, cmd, payload);
     });
 
-    this.emit(`${ns}:${cmd}`, payload);
+    this.emit(`${ns}:${cmd}`, payload).catch(this.log.error);
   },
 
 });

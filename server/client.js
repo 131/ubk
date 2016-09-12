@@ -27,8 +27,8 @@ var Client = module.exports = new Class({
   _call_stack : {},
 
   log : {
-    info  : debug("server:client"),
-    error : debug("server:client")
+    info  : debug("ubk:server:client"),
+    error : debug("ubk:server:client")
   },
 
   initialize : function(type, stream) {
@@ -78,7 +78,7 @@ var Client = module.exports = new Class({
       return;
     }
 
-    this.emit('received_cmd', this, data);
+    this.emit('received_cmd', this, data).catch(this.log.error);
   },
 
   signal : function(ns, cmd, args) {
@@ -130,7 +130,7 @@ var Client = module.exports = new Class({
 
   disconnected : function(reason) {
     this.log.info("Client %s disconnected (%s)", this.client_key, reason);
-    this.emit('disconnected', this);
+    this.emit('disconnected', this).catch(this.log.error);
   },
 
 });
