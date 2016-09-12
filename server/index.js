@@ -134,6 +134,7 @@ const Server = new Class({
   register_client : function* (client, query) {
 
     try {
+      var args = query.args;
         //can only register once...
       if(query.ns != "base" || query.cmd != "register")
         throw `Un-expected registration query`;
@@ -141,7 +142,7 @@ const Server = new Class({
       if(client.client_key)
         throw `Already registered client '${client.client_key}'`;
 
-      client.client_key = query.args.client_key;
+      client.client_key = args.client_key;
       // Check SSL client cert matches
       var exp = client.export_json();
 
@@ -168,8 +169,8 @@ const Server = new Class({
     client.on('received_cmd', this._onMessage);
 
       // THAT'S GREAT, LET'S NOTIFY EVERYBOOOOODYYYY
-    client.emit("registered", query.args).catch(this.log.error);
-    this.emit('registered_device', client, query.args).catch(this.log.error);
+    client.emit("registered", args).catch(this.log.error);
+    this.emit('registered_device', client, args).catch(this.log.error);
     this.broadcast('base', 'registered_client', client.export_json());
  },
 
