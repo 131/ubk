@@ -39,6 +39,7 @@ const WSTransport = new Class({
     return {
       type    : 'websocket',
       secured : false,
+      network : this._stream.upgradeReq.connection.localAddress,
       address : this._stream.upgradeReq.connection.remoteAddress,
       port    : this._stream.upgradeReq.connection.remotePort,
     }

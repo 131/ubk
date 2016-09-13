@@ -28,6 +28,9 @@ const TCPTransport = new Class({
   },
 
   initialize : function(stream) {
+    if(!stream.socket){
+      stream.socket = stream;
+    }
     this._buffer = new Buffer(0);
 
     // Listen TCP Stream events
@@ -88,6 +91,7 @@ const TCPTransport = new Class({
 
     return {
       type    : 'tcp',
+      network : this._stream.socket.localAddress,
       secured : this.secured,
       address : this._stream.remoteAddress,
       port    : this._stream.remotePort,

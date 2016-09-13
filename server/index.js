@@ -47,6 +47,13 @@ const Server = new Class({
     'server_port'   : 8000,
     'socket_port'   : 8001,
     'heartbeat_interval' : 1000 * 20,
+    'tls_options' : {
+      'requestCert': true,
+      'rejectUnauthorized' : true,
+      'key' :  null,
+      'cert' : null,
+      'ca' : [ null ]
+    }
   },
 
   log : {
@@ -59,14 +66,7 @@ const Server = new Class({
     this.setOptions(options);
     
     if(this.options.secured) {
-      var tls_options = {
-          requestCert: true,
-          rejectUnauthorized : true,
-          key :  null,
-          cert : null,
-          ca : [ null ]
-      };
-      this.tcp_server = tls.createServer(tls_options, this.new_tcp_client);
+      this.tcp_server = tls.createServer(this.options.tls_options, this.new_tcp_client);
     } else {
       this.tcp_server = net.createServer(this.new_tcp_client);
     }
