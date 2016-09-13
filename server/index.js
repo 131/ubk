@@ -110,7 +110,7 @@ const Server = new Class({
       // Send ping
       client.ping_failure = true;
       client.send('base', 'ping').then(function(response) {
-        client.ping_failure = (response == "pong");
+        client.ping_failure = !(response == "pong");
       });
     });
   },
