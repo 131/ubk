@@ -52,8 +52,6 @@ var TCPClient = new Class({
       };
     }
 
-    options.server_hostaddr  = server_hostaddr || options.server_hostaddr;
-    options.server_hostname  = options.server_hostname || options.server_hostaddr;
   },
 
 
