@@ -11,7 +11,7 @@ const Client  = require('../');
 
 
 const WSClient = new Class({
-  Implements : [Options, Client],
+  Extends : Client,
   Binds : ['receive', 'disconnect'],
 
 
@@ -23,7 +23,7 @@ const WSClient = new Class({
   },
 
   initialize : function(url , options) {
-    this.setOptions(options || {});
+    Client.prototype.initialize.call(this, options);
     this.url = url.replace('http','ws') ;
     this.client_key  = guid();
   },

@@ -6,6 +6,7 @@ const Events  = require('eventemitter-co');
 const defer   = require('nyks/promise/defer');
 const merge   = require('mout/object/merge');
 const detach  = require('nyks/function/detach');
+const Options = require('uclass/options');
 
 const debug = require('debug');
 
@@ -16,15 +17,17 @@ const evtmsk = function(ns, cmd) {
 }
 
 const Client =  new Class({
-  Implements : [Events],
+  Implements : [Events , Options],
 
   _call_stack : {},
   log : {
     error : debug("ubk:client"),
     info  : debug("ubk:client")
   },
+  options:{},
 
-  initialize : function() {
+  initialize : function(options) {
+    this.setOptions(options || {});
 
     this.register_rpc('base', 'ping', function *(){
       return Promise.resolve("pong");

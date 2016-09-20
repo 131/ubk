@@ -15,7 +15,7 @@ const Client  = require('../')
 
 
 var TCPClient = new Class({
-  Implements : [Options, Client],
+  Extends : Client,
   Binds : ['receive', 'disconnect'],
 
 
@@ -35,7 +35,12 @@ var TCPClient = new Class({
 
 
   initialize:function(options, server_hostaddr) {
-    this.setOptions(options);
+
+    options.server_hostaddr  = server_hostaddr || options.server_hostaddr;
+    options.server_hostname  = options.server_hostname || options.server_hostaddr;
+
+    Client.prototype.initialize.call(this, options);
+
     var license     = options.license;
     this.client_key  = options.client_key || guid();
 
