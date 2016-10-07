@@ -10,9 +10,6 @@ Exupery style. (You will not make it any smaller or simplier)
 * Reflection API (list connected clients)
 
 
-# Usage example
-* See minimal RPC sample here : https://github.com/131/ubk-tests
-
 
 ## Server API
  * Server implement EventEmitter API.
