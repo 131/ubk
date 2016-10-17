@@ -127,8 +127,11 @@ const Client =  new Class({
     }
 
     this.emit("message", data).catch(this.log.error);
-    this.emit(evtmsk(data.ns, data.cmd), this , data).catch(this.log.error);
-    this.emit(EVENT_SOMETHING_APPEND, data.ns, data.cmd).catch(this.log.error)
+    this.emit(evtmsk(data.ns, data.cmd), this , data)
+    .then(() => {
+      this.emit(EVENT_SOMETHING_APPEND, data.ns, data.cmd).catch(this.log.error)
+    })
+    .catch(this.log.error);
   },
 
   disconnect : function(){
