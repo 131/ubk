@@ -41,9 +41,10 @@ describe("Basic server/client chat", function(){
   });
 
 
-  it("should test simple chat", function(done){
+  it("should test simple chat & remote throw", function(done){
     var client = new Client({server_port:port});
     console.log("Connecting client");
+
 
     client.connect(function() {
 
@@ -65,7 +66,32 @@ describe("Basic server/client chat", function(){
 
   })
 
+  it("should test client crash", function(done){
+    var client = new Client({server_port:port});
 
+
+    client.register_rpc("client", "crash", function*(){
+      throw "This is an error"
+    });
+
+    client.connect();
+
+    server.once('base:registered_client', function(device){
+      device = server.get_client(device.client_key);
+
+      cothrow(function*(){
+        try {
+          var response = yield device.send("client", "crash");
+          throw "Never here";
+        } catch(err) {
+          expect(err).to.eql("This is an error");
+        }
+
+        done();
+      });
+    });
+  });
+  
 
   it("should allow client to connect", function(done){
     var currentClients = Object.keys(server._clientsList).length;

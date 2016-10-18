@@ -73,7 +73,7 @@ var Client = module.exports = new Class({
 
     var callback = this._call_stack[data.quid];
     if(callback) {
-      callback.promise.chain(null, data.response);
+      callback.promise.chain(data.error, data.response);
       delete this._call_stack[data.quid];
       return;
     }
