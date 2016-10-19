@@ -9,6 +9,7 @@ const debug   = require('debug');
 
 const TCPTransport = require('./transport/tcp');
 const WSTransport  = require('./transport/ws');
+const logPing = debug("ubk:server:ping")
 
 
 var Client = module.exports = new Class({
@@ -69,7 +70,11 @@ var Client = module.exports = new Class({
   // React to received data
   receive : function(data) {
     // Debug
-    this.log.info("Received ", data, " from client", this.client_key);
+    if(( (data.ns == 'base') && (data.cmd == 'ping') ) || (data.response == 'pong') ){
+      logPing("Received ", data, " from client", this.client_key);
+    }else {
+      this.log.info("Received ", data, " from client", this.client_key);
+    }
 
     var callback = this._call_stack[data.quid];
     if(callback) {

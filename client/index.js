@@ -9,6 +9,7 @@ const detach  = require('nyks/function/detach');
 const Options = require('uclass/options');
 
 const debug = require('debug');
+const logPing = debug("ubk:client:ping")
 
 const EVENT_SOMETHING_APPEND = "change_append";
 
@@ -114,7 +115,11 @@ const Client =  new Class({
 
 
   _onMessage : function(data) {
-    this.log.info("Received", data);
+    if(( (data.ns == 'base') && (data.cmd == 'ping') ) || (data.response == 'pong') ){
+      logPing("Received", data)
+    }else {
+      this.log.info("Received", data);
+    }
     // Local call stack
     var callback = this._call_stack[data.quid];
 
