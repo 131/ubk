@@ -227,8 +227,11 @@ const Server = new Class({
       return client.respond(data, response, err);
     }
 
-    this.emit(evtmsk(data.ns, data.cmd), client, data).catch(this.log.error);
-    this.emit(EVENT_SOMETHING_APPEND, data.ns, data.cmd).catch(this.log.error);
+    this.emit(evtmsk(data.ns, data.cmd), client, data)
+    .then(() => {
+      this.emit(EVENT_SOMETHING_APPEND, data.ns, data.cmd).catch(this.log.error);
+    })
+    .catch(this.log.error);
   },
 
 
