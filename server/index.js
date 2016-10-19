@@ -226,10 +226,12 @@ const Server = new Class({
       }
       return client.respond(data, response, err);
     }
-
-    this.emit(evtmsk(data.ns, data.cmd), client, data)
+    
+    var ns  = data.ns;
+    var cmd = data.cmd;
+    this.emit(evtmsk(ns, cmd), client, data)
     .then(() => {
-      this.emit(EVENT_SOMETHING_APPEND, data.ns, data.cmd).catch(this.log.error);
+      this.emit(EVENT_SOMETHING_APPEND, ns, cmd).catch(this.log.error);
     })
     .catch(this.log.error);
   },
