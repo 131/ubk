@@ -1,6 +1,11 @@
 # ubk
 micro message broker for v8.
 
+[![Build Status](https://travis-ci.org/131/ubk.svg?branch=master)](https://travis-ci.org/131/ubk)
+[![Coverage Status](https://coveralls.io/repos/github/131/ubk/badge.svg?branch=master)](https://coveralls.io/github/131/ubk?branch=master)
+[![Version](https://img.shields.io/npm/v/ubk.svg)](https://www.npmjs.com/package/ubk)
+
+
 # Key features
 Exupery style. (You will not make it any smaller or simplier)
 
@@ -36,5 +41,3 @@ Exupery style. (You will not make it any smaller or simplier)
     *payload : client
 
 
-[![Build Status](https://travis-ci.org/131/ubk.svg?branch=master)](https://travis-ci.org/131/ubk)
-[![Coverage Status](https://coveralls.io/repos/github/131/ubk/badge.svg?branch=master)](https://coveralls.io/github/131/ubk?branch=master)
