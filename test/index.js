@@ -34,6 +34,10 @@ describe("Basic server/client chat", function(){
       throw "This is an error"
     });
 
+    server.register_rpc('base', 'crash_with_binding', function* () {
+      throw this.message;
+    }, { message : "This is an error" });
+
     server.register_rpc('base', 'echo', function* (payload){
       return Promise.resolve(payload);
     });
@@ -59,6 +63,15 @@ describe("Basic server/client chat", function(){
         } catch(error){
           expect(error).to.eql("This is an error");
         }
+
+        try {
+          yield client.send("base", "crash_with_binding");
+          expect().fail("Should have crash by now")
+        } catch(error){
+          expect(error).to.eql("This is an error");
+        }
+
+
         done();
       });
 
