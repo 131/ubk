@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "coveralls": "npm install coveralls && node ./node_modules/coveralls/bin/coveralls.js < ./coverage/lcov.info",
-    "discify": "browserify --node -p discify index.js | discify-reporter --source=disc/graph.json",
+    "discify": "browserify --ignore cnyks --node -p discify index.js | discify-reporter --ir://run --source=disc/graph.json",
     "mocha": "mocha",
     "test": "node node_modules/istanbul/lib/cli.js  cover --report text-summary --report html --report lcov  node_modules/mocha/bin/_mocha"
   },
