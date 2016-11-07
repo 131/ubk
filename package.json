@@ -25,18 +25,18 @@
   },
   "homepage": "https://github.com/131/ubk",
   "dependencies": {
-    "debug": "^2.2.0",
+    "debug": "^2.3.0",
     "eventemitter-co": "^1.0.4",
     "mout": "^1.0.0",
-    "nyks": "^2.31.2",
+    "nyks": "^3.6.2",
     "uclass": "^2.4.0"
   },
   "devDependencies": {
     "async": "^2.0.1",
     "co": "^4.6.0",
     "expect.js": "^0.3.1",
-    "istanbul": "^0.3.18",
-    "mocha": "^2.2.5",
+    "istanbul": "^0.4.5",
+    "mocha": "^3.1.2",
     "mocha-plugin-co": "^1.0.0",
     "ws": "^1.1.0"
   }
