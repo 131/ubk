@@ -8,6 +8,7 @@ const co       = require('co');
 const stripStart = require('nyks/string/stripStart');
 const detach   = require('nyks/function/detach');
 const range    = require('mout/array/range');
+const sleep    = require('nyks/function/sleep');
 
 const Server = require('../server');
 const Client = require('../client/tcp');
@@ -38,12 +39,27 @@ describe("Basic server/client chat", function(){
       throw this.message;
     }, { message : "This is an error" });
 
-    server.register_rpc('base', 'echo', function* (payload){
+    server.register_rpc('base', 'echo', function* (payload) {
+      yield sleep(10);
       return Promise.resolve(payload);
     });
 
   });
 
+  it("should test local rpc loopback", function* () {
+    var data = yield server.call("base", "echo", 22);
+    expect(data).to.eql(22);
+  });
+
+
+  it("should test throw on invalid rpc loopback", function* () {
+    try {
+      var data = yield server.call("nope", "echo", 22);
+      expect.fail("Never here");
+    } catch(err){
+        expect(err).to.be("Invalid rpc command");
+    }
+  });
 
   it("should test simple chat & remote throw", function(done){
     var client = new Client({server_port:port});
@@ -174,18 +190,28 @@ describe("Basic server/client chat", function(){
     });
 
 
-    server.on('base:registered_client', function(device){
+    server.on('base:registered_client', function* (device) {
+      //testing direct call
+      var response = yield client.call("math", "sum", 2, 7);
+      expect(response).to.be(9);
+
+      try {
+        yield yield client.call("nope", "sum", 2, 7);
+        expect.fail("Never here");
+      } catch(err) {
+        expect(err).to.be("Invalid rpc command");
+      }
+
+
       device = server.get_client(device.client_key);
 
-      cothrow(function*() {
-        var response = yield device.send("math", "sum", 2, 4);
-        server.off('base:registered_client');
-        expect(response).to.be(6);
-        device.disconnect();
-        done();
-      });
-
+      var response = yield device.send("math", "sum", 2, 4);
+      server.off('base:registered_client');
+      expect(response).to.be(6);
+      device.disconnect();
+      done();
     });
+
     client.connect();
 
   })

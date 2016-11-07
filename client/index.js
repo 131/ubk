@@ -13,14 +13,16 @@ const logPing = debug("ubk:client:ping")
 
 const EVENT_SOMETHING_APPEND = "change_append";
 
-const evtmsk = function(ns, cmd) {
-  return `_${ns}:${cmd}`;
+const evtmsk = function(ns, cmd, space) {
+  return `_${ns}:${cmd}:${space||''}`;
 }
 
 const Client =  new Class({
   Implements : [Events , Options],
 
   _call_stack : {},
+  _rpcs       : {},
+
   log : {
     error : debug("ubk:client"),
     info  : debug("ubk:client")
@@ -62,24 +64,35 @@ const Client =  new Class({
   },
 
 
-  register_cmd : function(ns, cmd, callback) {
+  register_cmd : function(ns, cmd, callback, ctx) {
     this.off( evtmsk(ns, cmd) );
-    this.on( evtmsk(ns, cmd) , callback);
+    this.on( evtmsk(ns, cmd) , callback, ctx);
   },
 
 
-  register_rpc : function(ns, cmd, callback, ctx){
+  call : function * (ns, cmd) {
+    var args = [].slice.call(arguments, 2);
+    var proc = this._rpcs[evtmsk(ns, cmd, 'rpc')];
+    if(!proc)
+      throw "Invalid rpc command";
+    return yield proc.callback.apply(proc.ctx || this, args);
+  },
+
+
+  register_rpc : function(ns, cmd, callback, ctx) {
     var self = this;
+
+    this._rpcs[evtmsk(ns, cmd, 'rpc')] = {callback, ctx};
 
     this.register_cmd(ns, cmd, function* (client, query) {
       var response, err;
       try {
         var args = [query.args].concat(query.xargs || []);
-        response = yield callback.apply(ctx || this, args);
+        response = yield callback.apply(this, args);
       } catch(error) { err = ""+ error; }
 
       client.respond(query, response, err);
-    });
+    }, ctx);
   },
 
 

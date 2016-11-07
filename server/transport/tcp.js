@@ -2,7 +2,6 @@
 
 const Class   = require('uclass');
 const guid    = require('mout/random/guid');
-const indexOf = require('mout/array/indexOf');
 const once    = require('nyks/function/once');
 const debug   = require('debug');
 const Events  = require('eventemitter-co');
@@ -63,7 +62,7 @@ const TCPTransport = new Class({
     var delimiter_pos;
     this._buffer = Buffer.concat([this._buffer, chars]);
 
-    while((delimiter_pos = indexOf(this._buffer, this.Delimiter)) != -1) {
+    while((delimiter_pos = this._buffer.indexOf(this.Delimiter)) != -1) {
       // Read until delimiter
       var buff = this._buffer.slice(0, delimiter_pos);
       this._buffer = this._buffer.slice(delimiter_pos + 1);

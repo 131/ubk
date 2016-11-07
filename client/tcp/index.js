@@ -7,7 +7,6 @@ const Class   = require('uclass');
 const Options = require('uclass/options');
 const guid    = require('mout/random/guid');
 const merge   = require('mout/object/merge');
-const indexOf = require('mout/array/indexOf');
 const once    = require('nyks/function/once');
 
 
@@ -128,7 +127,7 @@ var TCPClient = new Class({
     var delimiter_pos;
     this._buffer = Buffer.concat([this._buffer, chars]);
 
-    while((delimiter_pos = indexOf(this._buffer, this.Delimiter)) != -1) {
+    while((delimiter_pos = this._buffer.indexOf(this.Delimiter)) != -1) {
       var buff = this._buffer.slice(0, delimiter_pos), data;
       this._buffer = this._buffer.slice(delimiter_pos + 1);
       try {

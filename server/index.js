@@ -40,6 +40,8 @@ const Server = new Class({
   ],
 
   _clientsList : {},
+  _rpcs       : {},
+
   _clientHeartBeat : null,
 
   options : {
@@ -194,8 +196,19 @@ const Server = new Class({
     this.on( evtmsk(ns, cmd) , callback, ctx);
   },
 
+
+  call : function * (ns, cmd) {
+    var args = [].slice.call(arguments, 2);
+    var proc = this._rpcs[evtmsk(ns, cmd, 'rpc')];
+    if(!proc)
+      throw "Invalid rpc command";
+    return yield proc.callback.apply(proc.ctx || this, args);
+  },
+
   register_rpc : function(ns, cmd, callback, ctx) {
     var self = this;
+
+    this._rpcs[evtmsk(ns, cmd, 'rpc')] = {callback, ctx};
 
     this.register_cmd(ns, cmd, function* (client, query) {
       var response, err;

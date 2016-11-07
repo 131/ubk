@@ -6,8 +6,8 @@
   "scripts": {
     "coveralls": "npm install coveralls && node ./node_modules/coveralls/bin/coveralls.js < ./coverage/lcov.info",
     "discify": "browserify --ignore cnyks --node -p discify index.js | discify-reporter --ir://run --source=disc/graph.json",
-    "mocha": "mocha",
-    "test": "node node_modules/istanbul/lib/cli.js  cover --report text-summary --report html --report lcov  node_modules/mocha/bin/_mocha"
+    "mocha": "mocha -r mocha-plugin-co -b",
+    "test": "node node_modules/istanbul/lib/cli.js cover --report text-summary --report html --report lcov  node_modules/mocha/bin/_mocha -- -r mocha-plugin-co"
   },
   "repository": {
     "type": "git",
@@ -33,10 +33,11 @@
   },
   "devDependencies": {
     "async": "^2.0.1",
-    "expect.js": "^0.3.1",
     "co": "^4.6.0",
+    "expect.js": "^0.3.1",
     "istanbul": "^0.3.18",
     "mocha": "^2.2.5",
+    "mocha-plugin-co": "^1.0.0",
     "ws": "^1.1.0"
   }
 }
