@@ -46,7 +46,7 @@ var Client = module.exports = new Class({
 
     var registrationTimeout = setTimeout( () => {
       this.log.info('Client registration timeout');
-      this.disconnect();
+      this.disconnect("timeout");
     }, 5000);
 
     this.once("registered", () => {

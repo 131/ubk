@@ -114,7 +114,9 @@ const TCPTransport = new Class({
 
     if(!this._stream)
       return;
-
+    
+    //closing tcp connection take time -> we stop listening data
+    this._stream.removeAllListeners("data");
     this._stream.end();
     this._stream = null;
     this.emit("transport_disconnect").catch(this.log.error);
