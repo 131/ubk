@@ -61,7 +61,7 @@ const WSTransport = new Class({
     if(!this._stream)
       return;
     
-    this._stream.removeAllListeners("data");
+    this._stream.removeAllListeners("message");
     this._stream.close();
     this._stream = null;
     this.emit("transport_disconnect").catch(this.log.error);
