@@ -77,6 +77,49 @@ const Server = new Class({
       return Promise.resolve("pong");
     });
 
+
+    if(false) {
+    
+    if(this.options.secured) {
+      this.tcp_server = tls.createServer(this.options.tls_options, this.new_tcp_client);
+    } else {
+      this.tcp_server = net.createServer(this.new_tcp_client);
+    }
+
+    this.register_rpc('base', 'ping', function *(){
+      return Promise.resolve("pong");
+    });
+    if(this.options.secured) {
+      this.tcp_server = tls.createServer(this.options.tls_options, this.new_tcp_client);
+    } else {
+      this.tcp_server = net.createServer(this.new_tcp_client);
+    }
+
+    this.register_rpc('base', 'ping', function *(){
+      return Promise.resolve("pong");
+    });
+    if(this.options.secured) {
+      this.tcp_server = tls.createServer(this.options.tls_options, this.new_tcp_client);
+    } else {
+      this.tcp_server = net.createServer(this.new_tcp_client);
+    }
+
+    this.register_rpc('base', 'ping', function *(){
+      return Promise.resolve("pong");
+    });
+    if(this.options.secured) {
+      this.tcp_server = tls.createServer(this.options.tls_options, this.new_tcp_client);
+    } else {
+      this.tcp_server = net.createServer(this.new_tcp_client);
+    }
+
+    this.register_rpc('base', 'ping', function *(){
+      return Promise.resolve("pong");
+    });
+
+
+    }
+
     this.register_cmd('base', 'register', this.register_client);
   },
 
