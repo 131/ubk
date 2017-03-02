@@ -1,5 +1,7 @@
 # ubk
 High performance, micro [JSON streaming](https://en.wikipedia.org/wiki/JSON_Streaming) message broker for v8.
+[ubk](https://github.com/131/ubk) use ES8 async/await design (backed on [co/eventemitter-co](https://github.com/131/eventemitter-co)
+
 
 [![Build Status](https://travis-ci.org/131/ubk.svg?branch=master)](https://travis-ci.org/131/ubk)
 [![Coverage Status](https://coveralls.io/repos/github/131/ubk/badge.svg?branch=master)](https://coveralls.io/github/131/ubk?branch=master)
