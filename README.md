@@ -1,5 +1,5 @@
 # ubk
-micro message broker for v8.
+High performance, micro [JSON streaming](https://en.wikipedia.org/wiki/JSON_Streaming) message broker for v8.
 
 [![Build Status](https://travis-ci.org/131/ubk.svg?branch=master)](https://travis-ci.org/131/ubk)
 [![Coverage Status](https://coveralls.io/repos/github/131/ubk/badge.svg?branch=master)](https://coveralls.io/github/131/ubk?branch=master)
@@ -8,8 +8,7 @@ micro message broker for v8.
 
 
 # Key features
-Exupery style. (You will not make it any smaller or simplier)
-
+* Exupery style. (You will not make it any smaller or simplier)
 * Broker support application (backend) 
 * pub/sub pattern
 * RCP support (asynchronious procedure calls)
@@ -19,11 +18,10 @@ Exupery style. (You will not make it any smaller or simplier)
 
 ## Server API
  * Server implement EventEmitter API.
-
-.register_cmd(ns, command, callback)
+`.register_cmd(ns, command, callback)`
   subscribe for a specific message in NS, callback is callback(client, query)
 
-.broadcast(ns, cmd, payload)
+`.broadcast(ns, cmd, payload)`
   * send a payload message to all connected clients
   * emit local event "ns:cmd" 
 
