@@ -95,7 +95,8 @@ const Server = new Class({
     this.log.info("Server is in %s mode", this.options.secured ? "SECURED" : "NON SECURED");
 
     this.tcp_server.listen({port:server_port, host:'0.0.0.0'}, function() {
-      self.log.info("Started TCP server for clients on port %d", server_port);
+      self.options.server_port  =  self.tcp_server.address().port;
+      self.log.info("Started TCP server for clients on port %d", self.options.server_port);
       chain();
     });
   },
