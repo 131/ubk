@@ -49,6 +49,7 @@ const Server = new Class({
     'server_port'   : 8000,
     'socket_port'   : 8001,
     'heartbeat_interval' : 1000 * 20,
+    'broadcasting_registration'  : true,
     'tls_options' : {
       'requestCert': true,
       'rejectUnauthorized' : true,
@@ -173,7 +174,8 @@ const Server = new Class({
       // THAT'S GREAT, LET'S NOTIFY EVERYBOOOOODYYYY
     client.emit("registered", args).catch(this.log.error);
     this.emit('registered_device', client, args).catch(this.log.error);
-    this.broadcast('base', 'registered_client', client.export_json());
+    if(this.options.broadcasting_registration)
+      this.broadcast('base', 'registered_client', client.export_json());
  },
 
 
@@ -183,7 +185,8 @@ const Server = new Class({
     delete this._clientsList[client.client_key];
 
     this.emit('unregistered_device', client).catch(this.log.error);
-    this.broadcast('base', 'unregistered_client', {client_key : client.client_key });
+    if(this.options.broadcasting_registration)
+      this.broadcast('base', 'unregistered_client', {client_key : client.client_key });
   },
 
   unregister_cmd : function(ns, cmd) {
