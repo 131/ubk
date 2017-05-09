@@ -47,11 +47,7 @@ const WSTransport = new Class({
 
   // Send some data over the web socket
   write : function(data) {
-    try {
-      this._stream.send(JSON.stringify(data));
-    } catch(e){
-      this.log.info("Failed to write in ws client. ", e);
-    }
+    this._stream.send(JSON.stringify(data));
   },
 
   // On error : Kill stream

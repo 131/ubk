@@ -114,12 +114,8 @@ var TCPClient = new Class({
 
   // Low level method to send JSON data
   write : function(json) {
-    try {
-      this._socket.write(JSON.stringify(json));
-      this._socket.write(String.fromCharCode(this.Delimiter));
-    } catch (e) {
-      this.log.info("can't write in the socket" , e) ;
-    } 
+    this._socket.write(JSON.stringify(json));
+    this._socket.write(String.fromCharCode(this.Delimiter));
   },
 
   // Received some data

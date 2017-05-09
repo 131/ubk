@@ -88,7 +88,12 @@ var Client = module.exports = new Class({
 
   signal : function(ns, cmd, args) {
     var query = {ns, cmd, args };
-    this.write(query);
+    try{
+      this.write(query);
+    }catch(err){
+      this.log.error("can't write in the socket" , err);
+      promise.reject(err);
+    }
   },
 
 
@@ -105,7 +110,13 @@ var Client = module.exports = new Class({
     if(!(query.ns == 'base' && query.cmd == 'ping'))
       this.log.info("Send msg '%s:%s' to %s ", query.ns, query.cmd, this.client_key);
 
-    this.write(query);
+    try{
+      this.write(query);
+    }catch(err){
+      this.log.error("can't write in the socket" , err);
+      promise.reject(err);
+    }
+
     return promise;
   },
 
@@ -122,7 +133,11 @@ var Client = module.exports = new Class({
     delete query.ns;
     delete query.xargs;
     delete query.args;
-    this.write(query);
+    try{
+      this.write(query);
+    }catch(err){
+      this.log.error("can't write in the socket" , err);
+    }
   },
 
   write : function(query) {

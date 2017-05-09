@@ -43,7 +43,11 @@ const Client =  new Class({
     query.response = response;
     query.error    = error;
     delete query.args;
-    this.write(query);
+    try{
+      this.write(query);
+    }catch(err){
+      this.log.error("can't write in the socket" , err);
+    }
   },
 
   send : function(ns, cmd /*, payload[, xargs..] */){
@@ -58,8 +62,13 @@ const Client =  new Class({
     this._call_stack[quid] = { ns, cmd, promise };
 
     this.log.info("Write", query);
-    this.write(query);
 
+    try{
+      this.write(query);
+    }catch(err){
+      this.log.error("can't write in the socket" , err);
+      promise.reject(err);
+    }
     return promise;
   },
 

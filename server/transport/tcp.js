@@ -100,12 +100,8 @@ const TCPTransport = new Class({
 
   // Send some data over the tcp stream
   write : function(data) {
-    try {
-      this._stream.write(JSON.stringify(data));
-      this._stream.write(String.fromCharCode(this.Delimiter));
-    } catch(e) {
-      this.log.info("Failed to write in tcp client. ", e);
-    }
+    this._stream.write(JSON.stringify(data));
+    this._stream.write(String.fromCharCode(this.Delimiter));
   },
 
   // On error : Kill stream
