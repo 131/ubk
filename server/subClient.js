@@ -1,4 +1,4 @@
-
+'use strict';
 
 class subClient {
   constructor(client, sub_client_key){

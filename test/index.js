@@ -25,6 +25,7 @@ function cothrow(generator){
 }
 
 describe("Basic server/client chat", function(){
+    this.timeout(5000);
 
   it("must start the server", function(done){
     server.start(function(){
@@ -218,6 +219,7 @@ describe("Basic server/client chat", function(){
 
 
   it("should support multiple clients", function(done) {
+    
     var pfx = 'client_', clients = [], connectedClients = 0;
 
     range(0,10).forEach( function(i){
