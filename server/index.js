@@ -11,6 +11,7 @@ const Client  = require('./client.js');
 const merge   = require('mout/object/merge');
 const forIn   = require('mout/object/forIn');
 const Events  = require('eventemitter-co');
+const eachSeries = require('async-co/eachOfSeries');
 
 const EVENT_SOMETHING_APPEND = "change_append";
 
@@ -79,6 +80,36 @@ const Server = new Class({
     });
 
     this.register_cmd('base', 'register', this.register_client);
+    this.register_cmd('base', 'register_sub_client'  , this.register_sub_client);
+    this.register_cmd('base', 'unregister_sub_client', this.unregister_sub_client);
+
+  },
+
+  register_sub_client : function* (client, query) {
+    var sub_client_key = query.args;
+    var error, response;
+    try{
+      yield this.validate_sub_client(sub_client_key);
+      response = client.add_sub_client(sub_client_key);
+    }catch(err){
+      error = err ;
+    }
+    client.respond(query, response, error);
+  },
+
+  unregister_sub_client : function* (client, query) {
+    var sub_client_key = query.args;
+    var error, response;
+    try{
+      response = client.remove_sub_client(sub_client_key);
+    }catch(err){
+      error = err ;
+    }
+    client.respond(query, response, error);
+  },
+
+  validate_sub_client : function * (){
+    return true; // a redefinir
   },
 
   get_client : function(client_key){
@@ -159,6 +190,16 @@ const Server = new Class({
       // Avoid conflicts
       if(this._clientsList[client.client_key])
         throw `Client '${client.client_key}' already exists, sorry`;
+
+      try{
+        yield eachSeries(args.sub_Clients_list || [] , function*(sub_client_key){
+          yield self.validate_sub_client(sub_client_key);
+          client.add_sub_client(sub_client_key);
+        })
+      }catch(error){
+        console.log('cant register subClient ' , error);
+      }
+
     } catch(err) {
       if(typeof query == "object")
         client.respond(query, null, err);

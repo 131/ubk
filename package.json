@@ -25,6 +25,7 @@
   },
   "homepage": "https://github.com/131/ubk",
   "dependencies": {
+    "async-co": "^1.7.0",
     "debug": "^2.3.0",
     "eventemitter-co": "^1.0.4",
     "mout": "^1.0.0",

@@ -1,6 +1,6 @@
 'use strict';
 
-class subClient {
+class SubClient {
   constructor(client, sub_client_key){
     this.client     = client;
     this.client_key = sub_client_key;
@@ -25,3 +25,6 @@ class subClient {
     return promise;
   }
 }
+
+
+module.exports = SubClient;
