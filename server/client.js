@@ -66,6 +66,7 @@ var Client = module.exports = new Class({
       registration_time : Math.floor(this.registration_time/1000),
       uptime: Math.floor((Date.now() - this.registration_time) / 1000),
       remoteAddress : this.transport.export_json(),
+      sub_client_list : Object.keys(this._sub_clients)
     };
   },
 
@@ -92,7 +93,7 @@ var Client = module.exports = new Class({
       var sub_client_key = data.ns.split("*")[1];
       data.ns = data.ns.split("*")[0];
 
-      if(sub_client_key && this._sub_clients[sub_client]){
+      if(sub_client_key && this._sub_clients[sub_client_key]){
        remote = this._sub_clients[sub_client_key];
       }
     }
@@ -169,11 +170,12 @@ var Client = module.exports = new Class({
   add_sub_client : function(client_key){
     if(this._sub_clients[client_key])
       return this._sub_clients[client_key];
-
     this._sub_clients[client_key] = new SubClient(this, client_key);
+    this.log.info("sub client %s connect ", client_key, reason);
   },
 
   remove_sub_client : function(client_key){
+    this.log.info("sub client %s disconnected ", client_key, reason);
     delete this._sub_clients[client_key]
   },
 

@@ -80,35 +80,51 @@ const Server = new Class({
     });
 
     this.register_cmd('base', 'register', this.register_client);
-    this.register_cmd('base', 'register_sub_client'  , this.register_sub_client);
-    this.register_cmd('base', 'unregister_sub_client', this.unregister_sub_client);
+    
+    this.register_cmd('base', 'register_sub_client'  , this.register_sub_client.bind(this));
+    this.register_cmd('base', 'unregister_sub_client', this.unregister_sub_client.bind(this));
 
   },
 
   register_sub_client : function* (client, query) {
-    var sub_client_key = query.args;
-    var error, response;
+    var sub_client_key    = query.args.client_key;
+    var client_capability = query.args.client_capability;
+    var error, response, validated_data;
     try{
-      yield this.validate_sub_client(sub_client_key);
+      var all_sub_client = this.get_all_sub_client();
+      if(all_sub_client[sub_client_key])
+        throw `Client '${sub_client_key}' already exists, sorry`;
+      validated_data = yield this.validate_sub_client(sub_client_key, client_capability);
       response = client.add_sub_client(sub_client_key);
+      this.emit('register_sub_client', client, validated_data).catch(this.log.error);
     }catch(err){
       error = err ;
     }
     client.respond(query, response, error);
   },
 
+  get_all_sub_client : function(){
+    var all_sub_client = {};
+    forIn(this._clientsList , (client)=>{
+      all_sub_client = merge(all_sub_client, client._sub_clients);
+    })
+    return all_sub_client;
+  },
+
   unregister_sub_client : function* (client, query) {
-    var sub_client_key = query.args;
+    var sub_client_key    = query.args.client_key;
+
     var error, response;
     try{
       response = client.remove_sub_client(sub_client_key);
     }catch(err){
       error = err ;
     }
+    this.emit('unregister_sub_client', client).catch(this.log.error);
     client.respond(query, response, error);
   },
 
-  validate_sub_client : function * (){
+  validate_sub_client : function * (sub_client_key, client_capability){
     return true; // a redefinir
   },
 
