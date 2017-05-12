@@ -72,9 +72,7 @@ const TCPTransport = new Class({
       try {
         data = JSON.parse(buff.toString());
       } catch(e) {
-
-        console.log('aaaaaaaaaaaaaaaaaaaaaaaaa  ' , ''+buff)
-       // this.log.info("Bad data, not json", buff, "<raw>", buff.toString(), "</raw>");
+        this.log.info("Bad data, not json", buff, "<raw>", buff.toString(), "</raw>");
         continue;
       }
 
