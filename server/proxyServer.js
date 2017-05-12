@@ -4,12 +4,21 @@ const os     = require('os');
 
 const Server = require('./index');
 const Client = require('../client/tcp');
+const debug  = require('debug');
+const map    = require('mout/object/map');
+const values = require('mout/object/values');
 
 class ProxyServer extends Server {
 
   constructor(options){
     super(options.server);
     var self = this;
+
+    this.log = {
+      info  : debug("ubk:server:ProxyServer"),
+      error : debug("ubk:server:ProxyServer")
+    };
+
 
     this.on("registered_device", function*(client, args){
       try{
@@ -20,6 +29,8 @@ class ProxyServer extends Server {
       }
 
       console.log("register sub_client " , client.client_key);
+
+      client.registration_parameters = args; //save registration args
 
       client.on('received_cmd', function*(client, data){
         if(data.ns == 'base' &&  data.cmd == 'ping')
@@ -53,8 +64,8 @@ class ProxyServer extends Server {
       var client_key = fullns[1];
       data.ns        = fullns[0];
       if(client_key) { 
-        this.log.info("proxy %s from %s to %s", data, client.client_key, data.client_key);
-        var remote = this._clientsList[data.client_key], response, err;
+        self.log.info("proxy %s from %s to %s", data, client_key);
+        var remote = self._clientsList[client_key], response, err;
         try {
           if(!remote)
               throw `Bad client '${data.client_key}'`; //maybe unregist device
@@ -62,16 +73,21 @@ class ProxyServer extends Server {
         } catch(error) {
           err = error;
         }
-        return client.respond(data, response, err);
+        return self._client.respond(data, response, err);
       }
     })
   }
 
   connect(chain){
     var connect = this._client.connect.bind(this._client);
+    var sub_Clients_list = map(this._clientsList , (client) => {
+      return client.registration_parameters;
+    })
+    
+    sub_Clients_list = values(sub_Clients_list)
 
     var registration_parameters = {
-      sub_Clients_list  : Object.keys(this._clientsList),
+      sub_Clients_list,
       address           : os.networkInterfaces().eth0[0].address,
       port              : this.options.server_port
     }
@@ -84,14 +100,19 @@ class ProxyServer extends Server {
         self.connection = false ;
       }
       return setTimeout(() => {
+        var sub_Clients_list = map(self._clientsList , (client) => {
+          return client.registration_parameters;
+        })
 
-      var registration_parameters = {
-        sub_Clients_list  : Object.keys(self._clientsList),
-        address           : os.networkInterfaces().eth0.adress,
-        port              : self.options.server_port
-      }
+        sub_Clients_list = values(sub_Clients_list)
 
-      this.options.registration_parameters = registration_parameters;        
+        var registration_parameters = {
+          sub_Clients_list,
+          address           : os.networkInterfaces().eth0[0].address,
+          port              : self.options.server_port
+        }
+
+        self._client.options.registration_parameters = registration_parameters;        
           connect(function() {
                 self.connection = true ;
               },
