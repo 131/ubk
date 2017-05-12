@@ -35,7 +35,7 @@ var Client = module.exports = new Class({
     error : debug("ubk:server:client")
   },
 
-  initialize : function(type, stream) {
+  initialize : function(type, stream){
     var self = this;
 
     if(type == "ws")
@@ -171,10 +171,11 @@ var Client = module.exports = new Class({
     if(this._sub_clients[client_key])
       return this._sub_clients[client_key];
     this._sub_clients[client_key] = new SubClient(this, client_key);
-    this.log.info("sub client %s connect ", client_key, reason);
+    this.log.info("sub client %s connect ", client_key);
+    return this._sub_clients[client_key];
   },
 
-  remove_sub_client : function(client_key){
+  remove_sub_client : function(client_key, reason){
     this.log.info("sub client %s disconnected ", client_key, reason);
     delete this._sub_clients[client_key]
   },
