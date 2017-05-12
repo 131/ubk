@@ -80,48 +80,52 @@ const Server = new Class({
     });
 
     this.register_cmd('base', 'register', this.register_client);
+
+    var self = this;
     
-    this.register_cmd('base', 'register_sub_client'  , this.register_sub_client.bind(this));
-    this.register_cmd('base', 'unregister_sub_client', this.unregister_sub_client.bind(this));
-
-  },
-
-  register_sub_client : function* (client, query) {
-    var sub_client_key    = query.args.client_key;
-    var client_capability = query.args.client_capability;
-    var error, response, validated_data;
-    try{
-      var all_sub_client = this.get_all_sub_client();
-      if(all_sub_client[sub_client_key])
-        throw `Client '${sub_client_key}' already exists, sorry`;
-      validated_data = yield this.validate_sub_client(sub_client_key, client_capability);
-      response = client.add_sub_client(sub_client_key);
-      this.emit('register_sub_client', client, validated_data).catch(this.log.error);
-    }catch(err){
-      error = err ;
-    }
-    client.respond(query, response, error);
-  },
-
-  get_all_sub_client : function(){
-    var all_sub_client = {};
-    forIn(this._clientsList , (client)=>{
-      all_sub_client = merge(all_sub_client, client._sub_clients);
+    this.register_cmd('base', 'register_sub_client'  , function*(client, query){
+      var sub_client_registrationargs = query.args;
+      var error, response;
+      try{
+        yield self.register_sub_client(client, sub_client_registrationargs);
+      }catch(err){
+        self.log.error(err)
+        error = err ;
+      }
+      client.respond(query, response, error);
     })
-    return all_sub_client;
+
+    this.register_cmd('base', 'unregister_sub_client',function*(client, query){
+      var sub_client_key    = query.args.client_key;
+      var error, response;
+      try{
+        self.unregister_sub_client(client, sub_client_key);
+      }catch(err){
+        self.log.error(err)
+        error = err ;
+      }
+      client.respond(query, response, error);
+    })
   },
 
-  unregister_sub_client : function* (client, query) {
-    var sub_client_key    = query.args.client_key;
+  register_sub_client : function* (client, sub_client_registrationargs) {
+    var sub_client_key    = sub_client_registrationargs.client_key;
+    var client_capability = sub_client_registrationargs.client_capability;
+    var all_sub_client = this.get_all_sub_client();
+    if(all_sub_client[sub_client_key])
+      throw `Client '${sub_client_key}' already exists, sorry`;
+    var validated_data = yield this.validate_sub_client(sub_client_key, client_capability);
+    var sub_client = client.add_sub_client(sub_client_key);
+    this.emit('register_sub_client', sub_client, validated_data).catch(this.log.error);
+  },
 
+  unregister_sub_client : function(client, sub_client_key) {
+    var sub_client        = client._sub_clients[sub_client_key];
     var error, response;
-    try{
-      response = client.remove_sub_client(sub_client_key);
-    }catch(err){
-      error = err ;
-    }
-    this.emit('unregister_sub_client', client).catch(this.log.error);
-    client.respond(query, response, error);
+    if(!sub_client)
+      throw `Client '${sub_client_key}' already unregistred`;
+    client.remove_sub_client(sub_client.client_key);
+    this.emit('unregister_sub_client', sub_client).catch(this.log.error);
   },
 
   validate_sub_client : function * (sub_client_key, client_capability){
@@ -132,6 +136,13 @@ const Server = new Class({
     return this._clientsList[client_key];
   },
 
+  get_all_sub_client : function(){
+    var all_sub_client = {};
+    forIn(this._clientsList , (client)=>{
+      all_sub_client = merge(all_sub_client, client._sub_clients);
+    })
+    return all_sub_client;
+  },
 
   start : function(chain) {
     var self = this;
@@ -183,7 +194,7 @@ const Server = new Class({
 
 
   register_client : function* (client, query) {
-
+    var self = this;
     try {
       var args = query.args;
         //can only register once...
@@ -208,15 +219,12 @@ const Server = new Class({
         throw `Client '${client.client_key}' already exists, sorry`;
 
       try{
-        yield eachSeries(args.sub_Clients_list || [] , function*(sub_client_key){
-          yield self.validate_sub_client(sub_client_key);
-          client.add_sub_client(sub_client_key);
-        })
+        yield eachSeries(args.sub_Clients_list || [] , this.register_sub_client.bind(this, client));
       }catch(error){
         console.log('cant register subClient ' , error);
       }
 
-    } catch(err) {
+    }catch(err) {
       if(typeof query == "object")
         client.respond(query, null, err);
       return client.disconnect();
@@ -240,6 +248,11 @@ const Server = new Class({
   lost_client : function(client){
     // Remove from list
     this.log.info("Lost client");
+    
+    forIn(client._sub_clients, (sub_client) => {
+      this.unregister_sub_client(client, sub_client.sub_client_key);
+    })
+
     delete this._clientsList[client.client_key];
 
     this.emit('unregistered_device', client).catch(this.log.error);
