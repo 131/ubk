@@ -80,6 +80,7 @@ class ProxyServer extends Server {
 
   connect(chain){
     var connect = this._client.connect.bind(this._client);
+    var type = 'slave' ;
     var sub_Clients_list = map(this._clientsList , (client) => {
       return client.registration_parameters;
     })
@@ -88,6 +89,7 @@ class ProxyServer extends Server {
 
     var registration_parameters = {
       sub_Clients_list,
+      type,
       address           : os.networkInterfaces().eth0[0].address,
       port              : this.options.server_port
     }
@@ -108,6 +110,7 @@ class ProxyServer extends Server {
 
         var registration_parameters = {
           sub_Clients_list,
+          type,
           address           : os.networkInterfaces().eth0[0].address,
           port              : self.options.server_port
         }
