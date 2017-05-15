@@ -11,7 +11,7 @@ class SubClient {
  
   send(ns, cmd/*, payload[, xargs..] */) {
     var args = [].slice.call(arguments);
-    args[0] = args[0] + "*" + this.client_key; // ns = ns*devicekey
+    args[0] = {ns : args[0], sub_client_key : this.client_key }; // ns = ns*devicekey
     return this.client.send.apply(this.client, args);
   }
 }

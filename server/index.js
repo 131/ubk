@@ -300,27 +300,28 @@ const Server = new Class({
   },
 
   _onMessage : function* (client, data) {
-    var fullns = data.ns.split(":");
+    var target = data.ns;
+    if(typeof target == 'string') {
+      let tmp = target.split(':'); //legacy ns:device_key syntax
+      target = { ns : tmp[0], client_key : tmp[1] };
+    }
 
-    data.client_key = fullns[1]; //allow ns:device_key syntax
-    data.ns         = fullns[0]; //legacy behavior
-
-    if(data.client_key) { //proxy
-      this.log.info("proxy %s from %s to %s", data, client.client_key, data.client_key);
-      var remote = this._clientsList[data.client_key], response, err;
+    if(target.client_key) { //proxy
+      this.log.info("proxy %s from %s to %s", data, client.client_key, target.client_key);
+      var remote = this._clientsList[target.client_key], response, err;
       if(!remote)
-        remote = this.get_all_sub_client()[data.client_key];
+        remote = this.get_all_sub_client()[target.client_key];
       try {
         if(!remote)
-            throw `Bad client '${data.client_key}'`;
-        response = yield remote.send.apply(remote, [data.ns, data.cmd, data.args].concat(data.xargs));
+            throw `Bad client '${target.client_key}'`;
+        response = yield remote.send.apply(remote, [target.ns, data.cmd, data.args].concat(data.xargs));
       } catch(error) {
         err = error;
       }
       return client.respond(data, response, err);
     }
     
-    var ns  = data.ns;
+    var ns  = target.ns;
     var cmd = data.cmd;
     this.emit(evtmsk(ns, cmd), client, data)
     .then(() => {

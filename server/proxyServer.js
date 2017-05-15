@@ -15,17 +15,17 @@ class ProxyServer extends Server {
     var self = this;
 
     this.log = {
-      info  : debug("ubk:server:ProxyServer"),
-      error : debug("ubk:server:ProxyServer")
+      info  : debug('ubk:server:ProxyServer'),
+      error : debug('ubk:server:ProxyServer')
     };
 
 
-    this.on("registered_device", function*(client, args){
+    this.on('registered_device', function*(client, args){
       try{
-        args.client_key = args.client_key || client.client_key;
-        yield self._client.send("base", "register_sub_client", args)      
+        args.client_key = client.client_key; //force client_key
+        yield self._client.send('base', 'register_sub_client', args);
       }catch(err){
-        return client.disconnect('cant register client ' + client.client_key);
+        return client.disconnect("cant register client " + client.client_key);
       }
 
       console.log("register sub_client " , client.client_key);
@@ -34,12 +34,12 @@ class ProxyServer extends Server {
 
       client.on('received_cmd', function*(client, data){
         if(data.ns == 'base' &&  data.cmd == 'ping')
-          return
-        var ns = data.ns + "*" + client.client_key; 
-        data.client_key = client.client_key;
+          return;
+        data.ns = { sub_client_key : client.client_key , ns : data.ns };
+
         var response, error;
         try{
-          var response = yield self._client.send.apply(self._client, [ns, data.cmd, data.args].concat(data.xargs || []));
+          var response = yield self._client.send.apply(self._client, [data.ns, data.cmd, data.args].concat(data.xargs || []));
         }catch(err){
           error = err;
         }
@@ -47,29 +47,27 @@ class ProxyServer extends Server {
       })
     });
 
-    this.on("unregistered_device", function*(client){
+    this.on('unregistered_device', function*(client){
       try{
-        yield self._client.send("base", "unregister_sub_client", {client_key : client.client_key});       
+        yield self._client.send('base', 'unregister_sub_client', {client_key : client.client_key});       
       }catch(err){
-        console.log('cant unregister client !' , client.client_key , err)
+        console.log("cant unregister client !" , client.client_key , err)
       }
     })
 
     this._client = new Client(options.client)
     
-    this._client.on("message" , function*(data){
+    this._client.on('message' , function*(data){
       if(data.ns == 'base' && data.cmd == 'ping')
         return
-      var fullns = data.ns.split("*");
-      var client_key = fullns[1];
-      data.ns        = fullns[0];
-      if(client_key) { 
-        self.log.info("proxy %s from %s to %s", data, client_key);
-        var remote = self._clientsList[client_key], response, err;
+      var sub_client_key = data.ns.sub_client_key;
+      if(sub_client_key) {
+        self.log.info("proxy %s from %s to %s", data, sub_client_key);
+        var remote = self._clientsList[sub_client_key], response, err;
         try {
           if(!remote)
-              throw `Bad client '${data.client_key}'`; //maybe unregist device
-          response = yield remote.send.apply(remote, [data.ns, data.cmd, data.args].concat(data.xargs));
+              throw `Bad client '${sub_client_key}'`; //maybe unregist device
+          response = yield remote.send.apply(remote, [data.ns, data.cmd, data.args].concat(data.xargs || []));
         } catch(error) {
           err = error;
         }

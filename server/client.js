@@ -90,14 +90,10 @@ var Client = module.exports = new Class({
     }
 
     var remote         = this;
-    if(data.ns){
-      var sub_client_key = data.ns.split("*")[1];
-      data.ns = data.ns.split("*")[0];
-
-      if(sub_client_key && this._sub_clients[sub_client_key]){
+    var sub_client_key = data.ns && data.ns.sub_client_key;
+    if(sub_client_key && this._sub_clients[sub_client_key])
        remote = this._sub_clients[sub_client_key];
-      }
-    }
+
     this.emit('received_cmd', remote, data).catch(this.log.error);
   },
 
