@@ -247,10 +247,14 @@ const Server = new Class({
 
   lost_client : function(client){
     // Remove from list
-    this.log.info("Lost client");
+    this.log.info("Lost client" , client.client_key);
     
     forIn(client._sub_clients, (sub_client) => {
-      this.unregister_sub_client(client, sub_client.sub_client_key);
+      try{
+        this.unregister_sub_client(client, sub_client.client_key);
+      }catch(err){
+        this.log.error(err);
+      }
     })
 
     delete this._clientsList[client.client_key];
@@ -304,6 +308,8 @@ const Server = new Class({
     if(data.client_key) { //proxy
       this.log.info("proxy %s from %s to %s", data, client.client_key, data.client_key);
       var remote = this._clientsList[data.client_key], response, err;
+      if(!remote)
+        remote = this.get_all_sub_client()[data.client_key];
       try {
         if(!remote)
             throw `Bad client '${data.client_key}'`;
