@@ -43,7 +43,8 @@ var Client = module.exports = new Class({
 
     if(type == "tcp")
       this.transport = new TCPTransport(stream);
-
+    
+    this.type = type;
     this.transport.once("transport_disconnect", this.disconnected, this);
     this.transport.on("transport_message",    this.receive);
 
