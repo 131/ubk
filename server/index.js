@@ -12,6 +12,7 @@ const merge   = require('mout/object/merge');
 const forIn   = require('mout/object/forIn');
 const Events  = require('eventemitter-co');
 const eachSeries = require('async-co/eachOfSeries');
+const defer      = require('nyks/promise/defer');
 
 const EVENT_SOMETHING_APPEND = "change_append";
 
@@ -30,7 +31,6 @@ const Server = new Class({
     'heartbeat',
     'build_tls_server',
     'build_net_server',
-    'start_socket_server',
     'new_tcp_client',
     'new_websocket_client',
     'get_client',
@@ -145,6 +145,8 @@ const Server = new Class({
   },
 
   start : function(chain) {
+    chain = chain || Function.prototype;
+    var defered = defer();
     var self = this;
     var server_port = this.options.server_port;
 
@@ -152,11 +154,13 @@ const Server = new Class({
 
     this.log.info("Server is in %s mode", this.options.secured ? "SECURED" : "NON SECURED");
 
-    this.tcp_server.listen({port:server_port, host:'0.0.0.0'}, function() {
+    this.tcp_server.listen({port:server_port, host:'0.0.0.0'}, function(err) {
       self.options.server_port  =  self.tcp_server.address().port;
       self.log.info("Started TCP server for clients on port %d", self.options.server_port);
+      defered.chain(err, self.options.server_port);
       chain();
     });
+    return defered
   },
 
   heartbeat: function() {
