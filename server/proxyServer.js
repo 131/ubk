@@ -1,7 +1,5 @@
 'use strict';
 
-const os     = require('os');
-
 const Server = require('./index');
 const Client = require('../client/tcp');
 const debug  = require('debug');
@@ -13,6 +11,7 @@ class ProxyServer extends Server {
   constructor(options){
     super(options.server);
     var self = this;
+    this.address = options.address;
 
     this.log = {
       info  : debug('ubk:server:ProxyServer'),
@@ -78,7 +77,8 @@ class ProxyServer extends Server {
 
   connect(chain){
     var connect = this._client.connect.bind(this._client);
-    var type = 'slave' ;
+    var type    = 'slave' ;
+    var address = this.address;
     var sub_Clients_list = map(this._clientsList , (client) => {
       return client.registration_parameters;
     })
@@ -88,7 +88,7 @@ class ProxyServer extends Server {
     var registration_parameters = {
       sub_Clients_list,
       type,
-      address           : os.networkInterfaces().eth0[0].address,
+      address,
       port              : this.options.server_port
     }
 
@@ -109,7 +109,7 @@ class ProxyServer extends Server {
         var registration_parameters = {
           sub_Clients_list,
           type,
-          address           : os.networkInterfaces().eth0[0].address,
+          address,
           port              : self.options.server_port
         }
 
@@ -129,4 +129,3 @@ class ProxyServer extends Server {
 }
 
 module.exports = ProxyServer;
-
