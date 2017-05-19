@@ -5,11 +5,13 @@ const Client = require('../client/tcp');
 const debug  = require('debug');
 const map    = require('mout/object/map');
 const values = require('mout/object/values');
+const pluck  = require('mout/object/pluck');
 
 class ProxyServer extends Server {
 
   constructor(options){
     super(options.server);
+
     var self = this;
     this.address = options.address;
 
@@ -75,54 +77,48 @@ class ProxyServer extends Server {
     })
   }
 
-  connect(chain){
+  * connect(){ /*chain*/
+
     var connect = this._client.connect.bind(this._client);
     var type    = 'slave' ;
     var address = this.address;
-    var sub_Clients_list = map(this._clientsList , (client) => {
-      return client.registration_parameters;
-    })
-    
-    sub_Clients_list = values(sub_Clients_list)
+    var sub_Clients_list = pluck(this._clientsList, 'registration_parameters');
 
     var registration_parameters = {
       sub_Clients_list,
       type,
       address,
-      port              : this.options.server_port
+      port : this.options.server_port
     }
 
     this._client.options.registration_parameters = registration_parameters;
 
     var self = this;
     var failureCallback = () =>{
-      if(self.connection){
+      if(self.connection)
         self.connection = false ;
-      }
-      return setTimeout(() => {
-        var sub_Clients_list = map(self._clientsList , (client) => {
-          return client.registration_parameters;
-        })
 
-        sub_Clients_list = values(sub_Clients_list)
+      return setTimeout(() => {
+        var sub_Clients_list = pluck(self._clientsList, 'registration_parameters');
 
         var registration_parameters = {
           sub_Clients_list,
           type,
           address,
-          port              : self.options.server_port
+          port : self.options.server_port
         }
 
-        self._client.options.registration_parameters = registration_parameters;        
-          connect(function() {
-                self.connection = true ;
-              },
-              failureCallback)
-        }, 4000)
+        self._client.options.registration_parameters = registration_parameters;
+
+        connect(function() {
+          self.connection = true ;
+        }, failureCallback)
+
+      }, 4000)
     }
 
     if(!self.connection)
-      connect(chain , failureCallback);
+      connect(Function.prototype , failureCallback);
   }
   
 

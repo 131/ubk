@@ -144,8 +144,10 @@ const Server = new Class({
     return all_sub_client;
   },
 
-  start : function(chain) {
-    chain = chain || Function.prototype;
+  start : function( ) { /*chain*/
+    var args = [].slice.apply(arguments),
+        chain = args.shift() || Function.prototype;
+
     var defered = defer();
     var self = this;
     var server_port = this.options.server_port;
