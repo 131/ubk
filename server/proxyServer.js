@@ -68,7 +68,7 @@ class ProxyServer extends Server {
         try {
           if(!remote)
               throw `Bad client '${sub_client_key}'`; //maybe unregist device
-          response = yield remote.send.apply(remote, [data.ns, data.cmd, data.args].concat(data.xargs || []));
+          response = yield remote.send.apply(remote, [data.ns.ns, data.cmd, data.args].concat(data.xargs || []));
         } catch(error) {
           err = error;
         }
