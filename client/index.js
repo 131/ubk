@@ -132,7 +132,7 @@ const Client =  new Class({
 
       chain();
       self.emit("registered").catch(self.log.error);
-    }).catch(this.disconnect);
+    }).catch(this.disconnect.bind(this));
   },
 
 
