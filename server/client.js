@@ -9,6 +9,8 @@ const debug   = require('debug');
 
 const TCPTransport = require('./transport/tcp');
 const WSTransport  = require('./transport/ws');
+const SubClient    = require('./subClient');
+
 const logPing = debug("ubk:server:ping")
 
 
@@ -25,14 +27,15 @@ var Client = module.exports = new Class({
   transport : null,
 
   // Commands sent
-  _call_stack : {},
+  _call_stack  : {},
+  _sub_clients : {},
 
   log : {
     info  : debug("ubk:server:client"),
     error : debug("ubk:server:client")
   },
 
-  initialize : function(type, stream) {
+  initialize : function(type, stream){
     var self = this;
 
     if(type == "ws")
@@ -40,7 +43,8 @@ var Client = module.exports = new Class({
 
     if(type == "tcp")
       this.transport = new TCPTransport(stream);
-
+    
+    this.type = type;
     this.transport.once("transport_disconnect", this.disconnected, this);
     this.transport.on("transport_message",    this.receive);
 
@@ -63,6 +67,7 @@ var Client = module.exports = new Class({
       registration_time : Math.floor(this.registration_time/1000),
       uptime: Math.floor((Date.now() - this.registration_time) / 1000),
       remoteAddress : this.transport.export_json(),
+      sub_client_list : Object.keys(this._sub_clients)
     };
   },
 
@@ -70,6 +75,7 @@ var Client = module.exports = new Class({
   // React to received data
   receive : function(data) {
     // Debug
+    
     if(( (data.ns == 'base') && (data.cmd == 'ping') ) || (data.response == 'pong') ){
       logPing("Received ", data, " from client", this.client_key);
     }else {
@@ -83,7 +89,12 @@ var Client = module.exports = new Class({
       return;
     }
 
-    this.emit('received_cmd', this, data).catch(this.log.error);
+    var remote         = this;
+    var sub_client_key = data.ns && data.ns.sub_client_key;
+    if(sub_client_key && this._sub_clients[sub_client_key])
+       remote = this._sub_clients[sub_client_key];
+
+    this.emit('received_cmd', remote, data).catch(this.log.error);
   },
 
   signal : function(ns, cmd, args) {
@@ -152,5 +163,20 @@ var Client = module.exports = new Class({
     this.log.info("Client %s disconnected (%s)", this.client_key, reason);
     this.emit('disconnected', this).catch(this.log.error);
   },
+
+  add_sub_client : function(client_key){
+    if(this._sub_clients[client_key])
+      return this._sub_clients[client_key];
+    this._sub_clients[client_key] = new SubClient(this, client_key);
+    this.log.info("sub client %s connect ", client_key);
+    return this._sub_clients[client_key];
+  },
+
+  remove_sub_client : function(client_key, reason){
+    this.log.info("sub client %s disconnected ", client_key, reason);
+    delete this._sub_clients[client_key]
+  },
+
+
 
 });

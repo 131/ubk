@@ -1,12 +1,9 @@
 "use strict";
 
-const Class   = require('uclass');
 const guid    = require('mout/random/guid');
 const Events  = require('eventemitter-co');
 const defer   = require('nyks/promise/defer');
-const merge   = require('mout/object/merge');
 const detach  = require('nyks/function/detach');
-const Options = require('uclass/options');
 
 const debug = require('debug');
 const logPing = debug("ubk:client:ping")
@@ -17,29 +14,22 @@ const evtmsk = function(ns, cmd, space) {
   return `_${ns}:${cmd}:${space||''}`;
 }
 
-const Client =  new Class({
-  Implements : [Events , Options],
-
-  _call_stack : {},
-  _rpcs       : {},
-
-  log : {
-    error : debug("ubk:client"),
-    info  : debug("ubk:client")
-  },
-  options:{},
-
-  initialize : function(options) {
-    this.setOptions(options || {});
-
+class Client extends Events{
+  constructor(options){
+    super();
+    this.options     = options || {};
+    this._call_stack = {},
+    this._rpcs       = {},
+    this.log = {
+      error : debug("ubk:client"),
+      info  : debug("ubk:client")
+    };
     this.register_rpc('base', 'ping', function *(){
       return Promise.resolve("pong");
     });
+  }
 
-  },
-
-
-  respond : function(query, response, error){
+  respond(query, response, error){
     query.response = response;
     query.error    = error;
     delete query.args;
@@ -48,12 +38,11 @@ const Client =  new Class({
     }catch(err){
       this.log.error("can't write in the socket" , err);
     }
-  },
+  }
 
-  send : function(ns, cmd /*, payload[, xargs..] */){
+  send(ns, cmd /*, payload[, xargs..] */){
     var xargs = [].slice.call(arguments, 2),
       args  = xargs.shift();
-
 
     var promise = defer();
     var quid = guid();
@@ -70,25 +59,25 @@ const Client =  new Class({
       promise.reject(err);
     }
     return promise;
-  },
+  }
 
 
-  register_cmd : function(ns, cmd, callback, ctx) {
+  register_cmd(ns, cmd, callback, ctx) {
     this.off( evtmsk(ns, cmd) );
     this.on( evtmsk(ns, cmd) , callback, ctx);
-  },
+  }
 
 
-  call : function * (ns, cmd) {
+  *call(ns, cmd) {
     var args = [].slice.call(arguments, 2);
     var proc = this._rpcs[evtmsk(ns, cmd, 'rpc')];
     if(!proc)
       throw "Invalid rpc command";
     return yield proc.callback.apply(proc.ctx || this, args);
-  },
+  }
 
 
-  register_rpc : function(ns, cmd, callback, ctx) {
+  register_rpc(ns, cmd, callback, ctx) {
     var self = this;
 
     this._rpcs[evtmsk(ns, cmd, 'rpc')] = {callback, ctx};
@@ -102,17 +91,17 @@ const Client =  new Class({
 
       client.respond(query, response, err);
     }, ctx);
-  },
+  }
 
 
-  _doConnect : function(chain) {
+  _doConnect(chain) {
     var self = this;
 
     this.log.info("Connecting as %s", this.client_key);
 
     // Directly send register
 
-    var opts = merge({client_key : self.client_key}, self.options.registration_parameters);
+    var opts = Object.assign({client_key : self.client_key}, self.options.registration_parameters);
 
     self.send('base', 'register', opts).then(function(){
 
@@ -132,11 +121,11 @@ const Client =  new Class({
 
       chain();
       self.emit("registered").catch(self.log.error);
-    }).catch(this.disconnect);
-  },
+    }).catch(this.disconnect.bind(this));
+  }
 
 
-  _onMessage : function(data) {
+  _onMessage(data) {
     if(( (data.ns == 'base') && (data.cmd == 'ping') ) || (data.response == 'pong') ){
       logPing("Received", data)
     }else {
@@ -159,13 +148,13 @@ const Client =  new Class({
       this.emit(EVENT_SOMETHING_APPEND, data.ns, data.cmd).catch(this.log.error)
     })
     .catch(this.log.error);
-  },
+  }
 
-  disconnect : function(){
+  disconnect(){
     clearInterval(this._heartbeat);
-  },
+  }
+}
 
-});
 
 
 module.exports = Client;

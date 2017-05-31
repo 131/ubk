@@ -1,6 +1,8 @@
+'use strict';
+const defer   = require('nyks/promise/defer');
+const guid    = require('mout/random/guid');
 
-
-class subClient {
+class SubClient {
   constructor(client, sub_client_key){
     this.client     = client;
     this.client_key = sub_client_key;
@@ -8,20 +10,11 @@ class subClient {
   }
  
   send(ns, cmd/*, payload[, xargs..] */) {
-    var xargs = [].slice.call(arguments, 2),
-      args  = xargs.shift();
-
-    var promise = defer();
-    var quid = guid();
-    ns = ns + "*" + this.client_key;
-    var query = {ns, cmd, quid, args, xargs };
-
-    this.client._call_stack[quid] = { ns, cmd, promise };
-
-    if(!(query.ns == 'base' && query.cmd == 'ping'))
-      this.log.info("Send msg '%s*%s' to %s ", query.ns, query.cmd, this.client.client_key, this.client_key);
-
-    this.client.write(query);
-    return promise;
+    var args = [].slice.call(arguments);
+    args[0] = {ns : args[0], sub_client_key : this.client_key }; // ns = ns*devicekey
+    return this.client.send.apply(this.client, args);
   }
 }
+
+
+module.exports = SubClient;

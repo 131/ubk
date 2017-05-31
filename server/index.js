@@ -11,6 +11,8 @@ const Client  = require('./client.js');
 const merge   = require('mout/object/merge');
 const forIn   = require('mout/object/forIn');
 const Events  = require('eventemitter-co');
+const eachSeries = require('async-co/eachOfSeries');
+const defer      = require('nyks/promise/defer');
 
 const EVENT_SOMETHING_APPEND = "change_append";
 
@@ -29,7 +31,6 @@ const Server = new Class({
     'heartbeat',
     'build_tls_server',
     'build_net_server',
-    'start_socket_server',
     'new_tcp_client',
     'new_websocket_client',
     'get_client',
@@ -79,14 +80,75 @@ const Server = new Class({
     });
 
     this.register_cmd('base', 'register', this.register_client);
+
+    var self = this;
+    
+    this.register_cmd('base', 'register_sub_client'  , function*(client, query){
+      var sub_client_registrationargs = query.args;
+      var error, response;
+      try{
+        yield self.register_sub_client(client, sub_client_registrationargs);
+      }catch(err){
+        self.log.error(err)
+        error = err ;
+      }
+      client.respond(query, response, error);
+    })
+
+    this.register_cmd('base', 'unregister_sub_client',function*(client, query){
+      var sub_client_key    = query.args.client_key;
+      var error, response;
+      try{
+        self.unregister_sub_client(client, sub_client_key);
+      }catch(err){
+        self.log.error(err)
+        error = err ;
+      }
+      client.respond(query, response, error);
+    })
+  },
+
+  register_sub_client : function* (client, sub_client_registrationargs) {
+    var sub_client_key    = sub_client_registrationargs.client_key;
+    var client_capability = sub_client_registrationargs.client_capability;
+    var all_sub_client = this.get_all_sub_client();
+    if(all_sub_client[sub_client_key])
+      throw `Client '${sub_client_key}' already exists, sorry`;
+    var validated_data = yield this.validate_sub_client(sub_client_key, client_capability);
+    var sub_client = client.add_sub_client(sub_client_key);
+    this.emit('register_sub_client', sub_client, validated_data).catch(this.log.error);
+  },
+
+  unregister_sub_client : function(client, sub_client_key) {
+    var sub_client        = client._sub_clients[sub_client_key];
+    var error, response;
+    if(!sub_client)
+      throw `Client '${sub_client_key}' already unregistred`;
+    client.remove_sub_client(sub_client.client_key);
+    this.emit('unregister_sub_client', sub_client).catch(this.log.error);
+  },
+
+  validate_sub_client : function * (sub_client_key, client_capability){
+    return true; // a redefinir
   },
 
   get_client : function(client_key){
     return this._clientsList[client_key];
   },
 
+  get_all_sub_client : function(){
+    var all_sub_client = {};
+    forIn(this._clientsList , (client)=>{
+      all_sub_client = merge(all_sub_client, client._sub_clients);
+    })
+    return all_sub_client;
+  },
 
-  start : function(chain) {
+  start : function( ) { /*chain*/
+    var args = [].slice.apply(arguments),
+        chain = args.shift() || Function.prototype;
+
+    var defered = defer();
     var self = this;
     var server_port = this.options.server_port;
 
@@ -94,11 +156,13 @@ const Server = new Class({
 
     this.log.info("Server is in %s mode", this.options.secured ? "SECURED" : "NON SECURED");
 
-    this.tcp_server.listen({port:server_port, host:'0.0.0.0'}, function() {
+    this.tcp_server.listen({port:server_port, host:'0.0.0.0'}, function(err) {
       self.options.server_port  =  self.tcp_server.address().port;
       self.log.info("Started TCP server for clients on port %d", self.options.server_port);
+      defered.chain(err, self.options.server_port);
       chain();
     });
+    return defered
   },
 
   heartbeat: function() {
@@ -136,7 +200,7 @@ const Server = new Class({
 
 
   register_client : function* (client, query) {
-
+    var self = this;
     try {
       var args = query.args;
         //can only register once...
@@ -159,7 +223,14 @@ const Server = new Class({
       // Avoid conflicts
       if(this._clientsList[client.client_key])
         throw `Client '${client.client_key}' already exists, sorry`;
-    } catch(err) {
+
+      try{
+        yield eachSeries(args.sub_Clients_list || [] , this.register_sub_client.bind(this, client));
+      }catch(error){
+        console.log('cant register subClient ' , error);
+      }
+
+    }catch(err) {
       if(typeof query == "object")
         client.respond(query, null, err);
       return client.disconnect();
@@ -182,7 +253,16 @@ const Server = new Class({
 
   lost_client : function(client){
     // Remove from list
-    this.log.info("Lost client");
+    this.log.info("Lost client" , client.client_key);
+    
+    forIn(client._sub_clients, (sub_client) => {
+      try{
+        this.unregister_sub_client(client, sub_client.client_key);
+      }catch(err){
+        this.log.error(err);
+      }
+    })
+
     delete this._clientsList[client.client_key];
 
     this.emit('unregistered_device', client).catch(this.log.error);
@@ -226,25 +306,28 @@ const Server = new Class({
   },
 
   _onMessage : function* (client, data) {
-    var fullns = data.ns.split(":");
+    var target = data.ns;
+    if(typeof target == 'string') {
+      let tmp = target.split(':'); //legacy ns:device_key syntax
+      target = { ns : tmp[0], client_key : tmp[1] };
+    }
 
-    data.client_key = fullns[1]; //allow ns:device_key syntax
-    data.ns         = fullns[0]; //legacy behavior
-
-    if(data.client_key) { //proxy
-      this.log.info("proxy %s from %s to %s", data, client.client_key, data.client_key);
-      var remote = this._clientsList[data.client_key], response, err;
+    if(target.client_key) { //proxy
+      this.log.info("proxy %s from %s to %s", data, client.client_key, target.client_key);
+      var remote = this._clientsList[target.client_key], response, err;
+      if(!remote)
+        remote = this.get_all_sub_client()[target.client_key];
       try {
         if(!remote)
-            throw `Bad client '${data.client_key}'`;
-        response = yield remote.send.apply(remote, [data.ns, data.cmd, data.args].concat(data.xargs));
+            throw `Bad client '${target.client_key}'`;
+        response = yield remote.send.apply(remote, [target.ns, data.cmd, data.args].concat(data.xargs));
       } catch(error) {
         err = error;
       }
       return client.respond(data, response, err);
     }
     
-    var ns  = data.ns;
+    var ns  = target.ns;
     var cmd = data.cmd;
     this.emit(evtmsk(ns, cmd), client, data)
     .then(() => {
