@@ -46,6 +46,8 @@ describe("Basic server/client chat", function(){
   it("should allow rpc proxy", function(done) {
     var dummy = new Client({server_port:port});
     var summer = new Client({server_port:port, client_key: "summer"});
+    co(dummy._lifeLoop.bind(dummy)).catch((err) => {expect(err).to.be(true)});
+    co(summer._lifeLoop.bind(summer)).catch((err) => {expect(err).to.be(true)});
 
     //very simple RPC design
     summer.register_rpc("math", "sum", function* (a, b){
@@ -53,11 +55,11 @@ describe("Basic server/client chat", function(){
       return Promise.resolve(a + b);
     });
 
-
-    summer.connect(function() {
+    summer.connect();
+    summer.on('connected', function() {
       console.log("Summer connected");
-
-      dummy.connect(function() {
+      dummy.connect();
+      dummy.on('connected', function() {
         cothrow(function*(){
           var response = yield dummy.send("math:summer", "sum", 1,2);
           expect(response).to.be(3);
