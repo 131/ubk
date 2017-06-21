@@ -63,7 +63,7 @@ class TCPClient extends Client {
     }, this._tls);
 
 
-    this.log.info("Connecting with TLS to %s:%s", lnk.host, lnk.port);
+    this.log.info("Connecting with TLS to %s:%s", lnk.host, lnk.port, lnk.servername);
 
     // TLS socket with options & callback
     return tls.connect(lnk, callback);
@@ -79,6 +79,8 @@ class TCPClient extends Client {
     var socket_method = is_secured ? this.build_tls_socket : this.build_net_socket;
     var connect = defer();
     var socket = socket_method.call(this, connect.chain);
+      //bind socket error before connecting
+    socket.once('error', connect.chain);
     yield connect;
 
     return new TCPTransport(socket);

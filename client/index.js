@@ -70,7 +70,7 @@ class Client extends Events {
   }
 
 
-  *call(ns, cmd) {
+  * call(ns, cmd) {
     var args = [].slice.call(arguments, 2);
     var proc = this._rpcs[evtmsk(ns, cmd, 'rpc')];
     if(!proc)
@@ -153,8 +153,7 @@ class Client extends Events {
         } while(true);
 
       } catch(err) {
-
-        //self.log.error(err.stack)
+        self.log.error("" + err)
         if(this._transport)
           this._transport.destroy();
 
