@@ -160,7 +160,7 @@ class Client extends Events {
         this._transport = null;
 
         this.connected = false;
-        this.emit("disconnected");
+        this.emit("disconnected", err);
         yield sleep(4000);
       }
 
