@@ -44,7 +44,7 @@ describe("Basic server/client chat", function(){
   it("should disconnect a client that register multiple times", function(done) {
 
     var client = new Client({server_port:port});
-    co(client._lifeLoop.bind(client)).catch((err) => {expect(false).to.be(true)});
+    co(client.start).catch((err) => {expect(false).to.be(true)});
 
     var loop = 0;
     function dostuff(){

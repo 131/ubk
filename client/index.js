@@ -28,6 +28,7 @@ class Client extends Events {
       return Promise.resolve("pong");
     });
     this.shouldStop = true;
+    this.start = this.start.bind(this);
   }
 
   respond(query, response, error){
@@ -95,7 +96,7 @@ class Client extends Events {
   }
 
 
-  * _lifeLoop() {
+  * start () {
 
     var self = this;
 

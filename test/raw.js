@@ -78,7 +78,7 @@ describe("Basic server/client chat", function(){
       if(next["error"] && next["disconnect"])
         done();
     };
-    co(client._lifeLoop.bind(client)).catch((err) => {expect(err).to.be(true)});
+    co(client.start).catch((err) => {expect(err).to.be(true)});
 
     client.connect()
     client.on('connected', function() {
@@ -107,8 +107,8 @@ describe("Basic server/client chat", function(){
 
     var clienta = new Client({server_port:port, client_key : "AAA"});
     var clientb = new Client({server_port:port, client_key : "AAA"});
-    co(clienta._lifeLoop.bind(clienta)).catch((err) => {expect(err).to.be(true)});
-    co(clientb._lifeLoop.bind(clientb)).catch((err) => {expect(err).to.be(true)});
+    co(clienta.start).catch((err) => {expect(err).to.be(true)});
+    co(clientb.start).catch((err) => {expect(err).to.be(true)});
 
 
     console.log("Connecting client");
