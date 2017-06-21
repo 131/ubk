@@ -23,6 +23,7 @@ function cothrow(generator){
 }
 
 describe("Basic server/client chat", function(){
+  this.timeout(20 * 1000)
 
   it("must start the server", function(done){
     server.start(function(){
@@ -43,18 +44,20 @@ describe("Basic server/client chat", function(){
   it("should disconnect a client that register multiple times", function(done) {
 
     var client = new Client({server_port:port});
+    co(client._lifeLoop.bind(client)).catch((err) => {expect(false).to.be(true)});
 
     var loop = 0;
     function dostuff(){
       if(loop++ == 10)
         return done();
 
-      client.connect(function() {
-
+      client.connect()
+      client.on('connected', function() {
         client.disconnect();
         client.disconnect();
+      })
 
-      }, function(){
+      client.on('disconnected', function(){
         setTimeout(function(){ //let 20ms for the server to process
             expect(Object.keys(server._clientsList).length).to.be(0);
             dostuff();
