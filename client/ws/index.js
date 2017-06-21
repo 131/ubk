@@ -4,8 +4,11 @@
 const guid    = require('mout/random/guid');
 const once    = require('nyks/function/once');
 const merge   = require('mout/object/merge');
+const defer   = require('nyks/promise/defer');
 
 const Client  = require('../');
+const WSTransport = require('./transport');
+
 
 
 class WSClient extends Client{
@@ -21,42 +24,16 @@ class WSClient extends Client{
     this.client_key  = guid();
   }
 
-  connect(chainConnect, chainDisconnect) {
-    var self = this ;
+  * transport () {
+    this.log.info('try to connect !!');
+    // Secured or clear method ?
+    var socket = new WebSocket(this.url) ;
+    var connect = defer();
+    socket.onopen = connect.resolve
 
-    this._onDisconnect = once(chainDisconnect || Function.prototype);
-    chainConnect       = once(chainConnect || Function.prototype);
+    yield connect;
 
-    this._socket = new WebSocket(this.url) ;
- 
-
-    this._socket.onopen = function() {
-      self._doConnect(chainConnect);
-    };
-
-    this._socket.onmessage = this.receive.bind(this);
-    this._socket.onclose   = this.disconnect.bind(this);
-  }
-
-  write (data) {
-    this._socket.send(JSON.stringify(data));
-  }
-
-  // Received a message
-  receive (message) {
-    var data = JSON.parse(message.data) ;
-    this._onMessage(data);
-  }
-
-  disconnect(error){
-    super.disconnect();
-
-    if(this._socket) {
-      this._socket.close();
-      this._socket = null;
-    }
-
-    this._onDisconnect(error);
+    return new WSTransport(socket);
   }
 }
 
