@@ -14,7 +14,7 @@ const evtmsk = function(ns, cmd, space) {
   return `_${ns}:${cmd}:${space||''}`;
 }
 
-class Client extends Events{
+class Client extends Events {
   constructor(options){
     super();
     this.options     = options || {};
@@ -33,14 +33,14 @@ class Client extends Events{
     query.response = response;
     query.error    = error;
     delete query.args;
-    try{
-      this.write(query);
-    }catch(err){
+    try {
+      this._transport.write(query);
+    } catch(err) {
       this.log.error("can't write in the socket" , err);
     }
   }
 
-  send(ns, cmd /*, payload[, xargs..] */){
+  send(ns, cmd /*, payload[, xargs..] */) {
     var xargs = [].slice.call(arguments, 2),
       args  = xargs.shift();
 
@@ -52,9 +52,9 @@ class Client extends Events{
 
     this.log.info("Write", query);
 
-    try{
-      this.write(query);
-    }catch(err){
+    try {
+      this._transport.write(query);
+    } catch(err) {
       this.log.error("can't write in the socket" , err);
       promise.reject(err);
     }
@@ -94,36 +94,98 @@ class Client extends Events{
   }
 
 
-  _doConnect(chain) {
+  * _lifeLoop() {
+
+    this.shouldStop = true;
+
     var self = this;
 
+    if(this._looping)
+      throw "Already connected";
+
+    this._looping = true;
     this.log.info("Connecting as %s", this.client_key);
 
     // Directly send register
 
     var opts = Object.assign({client_key : self.client_key}, self.options.registration_parameters);
+    var wait = defer();
 
-    self.send('base', 'register', opts).then(function(){
 
-      self.log.info('Client has been registered');
+    do {
 
-      var connected = true ;
+      if(this.shouldStop) {
+        yield sleep(200);
+        continue;
+      }
 
-      self._heartbeat =  setInterval(function() {
-        if(!connected)
-          return self.disconnect();
+      try {
 
-        connected = false;
-        self.send("base" , "ping").then(function(response) {
-          connected = (response == "pong");
+        this._transport = yield this.transport();
+        this._transport.on('message', this._onMessage);
+        this._transport.once('error' , function(){
+           wait.reject();
         });
-      }, 10000);
 
-      chain();
-      self.emit("registered").catch(self.log.error);
-    }).catch(this.disconnect.bind(this));
+        yield self.send('base', 'register', opts);
+        self.emit("registered").catch(self.log.error);
+
+        self.log.info('Client has been registered');
+
+        this.connected = true;
+        this.emit("connected");
+
+        do {
+          wait = defer();
+          setTimeout(wait.reject, 10000);
+          var response = yield [ function * () {
+            var response = yield self.send("base" , "ping");
+            if(response != "pong")
+              throw "Invalid ping challenge reponse";
+            wait.resolve()
+          , wait];
+
+          if(this.shouldStop)
+            throw "Should stop everything";
+
+          wait = defer();
+          setTimeout(wait.resolve, 10000);
+          yield wait;
+        } while(true);
+
+      } catch(err) {
+        if(this._transport)
+          this._transport.destroy();
+
+        this._transport = null;
+
+        this.connected = false;
+        this.emit("disconnected");
+        yield sleep(4000);
+      }
+
+
+    } while(true);
   }
 
+  export_json() {
+    if(this._transport)
+      return this._transport.export_json();
+  }
+
+
+  connect(server_addr ) {
+    this.options.server_hostaddr = server_addr || this.options.server_hostaddr ;
+
+    this.shouldStop = false;
+  }
+
+  disconnect() {
+    if(this._transport)
+       this._transport.destroy();
+
+    this.shouldStop = true;
+  }
 
   _onMessage(data) {
     if(( (data.ns == 'base') && (data.cmd == 'ping') ) || (data.response == 'pong') ){
@@ -150,9 +212,6 @@ class Client extends Events{
     .catch(this.log.error);
   }
 
-  disconnect(){
-    clearInterval(this._heartbeat);
-  }
 }
 
 
