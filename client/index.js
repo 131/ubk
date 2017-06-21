@@ -3,7 +3,7 @@
 const guid    = require('mout/random/guid');
 const Events  = require('eventemitter-co');
 const defer   = require('nyks/promise/defer');
-const detach  = require('nyks/function/detach');
+const sleep   = require('nyks/function/sleep');
 
 const debug = require('debug');
 const logPing = debug("ubk:client:ping")
@@ -27,6 +27,7 @@ class Client extends Events {
     this.register_rpc('base', 'ping', function *(){
       return Promise.resolve("pong");
     });
+    this.shouldStop = true;
   }
 
   respond(query, response, error){
@@ -96,8 +97,6 @@ class Client extends Events {
 
   * _lifeLoop() {
 
-    this.shouldStop = true;
-
     var self = this;
 
     if(this._looping)
@@ -111,7 +110,6 @@ class Client extends Events {
     var opts = Object.assign({client_key : self.client_key}, self.options.registration_parameters);
     var wait = defer();
 
-
     do {
 
       if(this.shouldStop) {
@@ -122,7 +120,7 @@ class Client extends Events {
       try {
 
         this._transport = yield this.transport();
-        this._transport.on('message', this._onMessage);
+        this._transport.on('message', this._onMessage.bind(this));
         this._transport.once('error' , function(){
            wait.reject();
         });
@@ -142,7 +140,7 @@ class Client extends Events {
             var response = yield self.send("base" , "ping");
             if(response != "pong")
               throw "Invalid ping challenge reponse";
-            wait.resolve()
+            wait.resolve()}
           , wait];
 
           if(this.shouldStop)
@@ -154,6 +152,8 @@ class Client extends Events {
         } while(true);
 
       } catch(err) {
+
+        //self.log.error(err.stack)
         if(this._transport)
           this._transport.destroy();
 
@@ -171,12 +171,13 @@ class Client extends Events {
   export_json() {
     if(this._transport)
       return this._transport.export_json();
+    return {}
   }
 
 
-  connect(server_addr ) {
-    this.options.server_hostaddr = server_addr || this.options.server_hostaddr ;
-
+  connect(host, port) {
+    this.options.server_hostaddr = host || this.options.server_hostaddr ;
+    this.options.server_port     = port || this.options.server_port;
     this.shouldStop = false;
   }
 
@@ -188,17 +189,18 @@ class Client extends Events {
   }
 
   _onMessage(data) {
+
     if(( (data.ns == 'base') && (data.cmd == 'ping') ) || (data.response == 'pong') ){
       logPing("Received", data)
     }else {
       this.log.info("Received", data);
     }
+
     // Local call stack
     var callback = this._call_stack[data.quid];
 
     if(callback) {
        callback.promise.chain(data.error, data.response);
-
       this.emit(EVENT_SOMETHING_APPEND, callback.ns, callback.cmd).catch(this.log.error);
       delete this._call_stack[data.quid];
       return;

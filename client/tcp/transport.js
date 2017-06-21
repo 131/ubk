@@ -1,7 +1,7 @@
 "use strict";
 
-const guid    = require('mout/random/guid');
 const once    = require('nyks/function/once');
+const Events  = require('eventemitter-co');
 
 const Delimiter = 27;
 
@@ -10,7 +10,7 @@ class TCPTransport extends Events {
   constructor(socket){
     super();
     this._socket = socket;
-    this._buffer = null;
+    this._buffer = new Buffer(0);
 
     socket.on('data', this.receive.bind(this));
     socket.once('error', this.emit.bind(this, 'error'));
@@ -50,9 +50,9 @@ class TCPTransport extends Events {
   }
 
   export_json() {
+
     if(!this._socket)
       return {};
-
     return {
       type    : 'tcp',
       address : this._socket.remoteAddress,
@@ -63,4 +63,4 @@ class TCPTransport extends Events {
 
 }
 
-module.exports = TCPClient;
+module.exports = TCPTransport;

@@ -4,6 +4,7 @@
 const guid    = require('mout/random/guid');
 const once    = require('nyks/function/once');
 const merge   = require('mout/object/merge');
+
 const Client  = require('../');
 
 

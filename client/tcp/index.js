@@ -1,13 +1,14 @@
 "use strict";
-
 const net     = require('net');
 const tls     = require('tls');
+const guid    = require('mout/random/guid');
+const defer   = require('nyks/promise/defer');
 
 const TCPTransport = require('./transport');
+const Client = require('../');
 
 class TCPClient extends Client {
   constructor(options, server_hostaddr) {
-
     options = Object.assign({
       server_hostaddr : '127.0.0.1',
       server_port     : 8000,
@@ -47,6 +48,7 @@ class TCPClient extends Client {
 
   // Initialier a crypted TLS socket
   build_tls_socket(callback) {
+
     if(!this._tls.key)
       throw new Error("Missing private key");
     if(!this._tls.cert)
@@ -69,20 +71,19 @@ class TCPClient extends Client {
 
   // Connect to the server
   * transport () {
-    var self = this;
 
-    this._buffer = new Buffer(0);
-
+    this.log.info('try to connect !!');
     // Secured or clear method ?
     var is_secured    = !!(this._tls.key && this._tls.cert);
-    var socket_method = is_secured ? this.build_tls_socket : this.build_net_socket;
 
+    var socket_method = is_secured ? this.build_tls_socket : this.build_net_socket;
     var connect = defer();
     var socket = socket_method.call(this, connect.chain);
-    yield connect();
-
+    yield connect;
 
     return new TCPTransport(socket);
   }
 
 }
+
+module.exports = TCPClient;

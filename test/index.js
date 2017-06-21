@@ -25,8 +25,8 @@ function cothrow(generator){
 }
 
 describe("Basic server/client chat", function(){
-    this.timeout(5000);
-
+  this.timeout(20 * 1000); // usefull with debug
+  
   it("must start the server", function(done){
     server.start(function(){
       done();
@@ -65,15 +65,15 @@ describe("Basic server/client chat", function(){
   it("should test simple chat & remote throw", function(done){
     var client = new Client({server_port:port});
     console.log("Connecting client");
+    var client = new Client({server_port:port});
 
+    co(client._lifeLoop.bind(client)).catch((err) => {console.log(err.stack)});
 
-    client.connect(function() {
+    client.connect();
 
-      cothrow(function*() {
-
+    client.once('connected', function*() {
         var hello = yield client.send("base", "echo", "Hello");
         expect(hello).to.eql("Hello");
-
         try {
           yield client.send("base", "crash");
           expect().fail("Should have crash by now")
@@ -87,24 +87,19 @@ describe("Basic server/client chat", function(){
         } catch(error){
           expect(error).to.eql("This is an error");
         }
-
-
         done();
-      });
-
-    });
+      })
 
   })
 
   it("should test client crash", function(done){
     var client = new Client({server_port:port});
-
+    co(client._lifeLoop.bind(client)).catch((err) => {console.log(err.stack)});
+    client.connect();
 
     client.register_rpc("client", "crash", function*(){
       throw "This is an error"
     });
-
-    client.connect();
 
     server.once('base:registered_client', function(device){
       device = server.get_client(device.client_key);
@@ -127,9 +122,11 @@ describe("Basic server/client chat", function(){
     var currentClients = Object.keys(server._clientsList).length;
     var client = new Client({server_port:port});
 
+    co(client._lifeLoop.bind(client)).catch((err) => {console.log(err.stack)});
+    client.connect();
 
     var network_challenge = null;
-    client.connect(function(){
+    client.once('connected', function*() {
       network_challenge = client.export_json();
     });
 
@@ -171,10 +168,10 @@ describe("Basic server/client chat", function(){
         expect(Object.keys(server._clientsList).length).to.be(currentClients);
 
           //now waiting for client to figure it as been disconnected
-        setTimeout(function(){
+        client.once("disconnected" , detach(function(){
           expect(client.export_json()).to.eql({});
           done();
-        }, 100);
+        }));
       });
     });
 
@@ -183,6 +180,8 @@ describe("Basic server/client chat", function(){
 
   it("should support a very simple rpc definition & call", function(done){
     var client = new Client({server_port:port});
+
+    co(client._lifeLoop.bind(client)).catch((err) => {console.log(err.stack)});
 
     //very simple RPC design
     client.register_rpc("math", "sum", function* (a, b){
@@ -224,6 +223,7 @@ describe("Basic server/client chat", function(){
 
     range(0,10).forEach( function(i){
       var client = new Client({server_port:port, client_key:pfx + i});
+      co(client._lifeLoop.bind(client)).catch((err) => {console.log(err.stack)});
 
       client.once("registered", function(){
         connectedClients ++;
