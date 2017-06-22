@@ -1,5 +1,5 @@
 "use strict";
-/*
+
 const http   = require('http');
 const expect = require('expect.js')
 
@@ -8,6 +8,7 @@ global.WebSocket = require('ws');
 const ClientWs = require('../client/ws');
 const Server   = require('../server');
 const wsServer = require('ws').Server
+const co       = require('co');
 
 const port = 3000, wsPort = 8001, wsUrl = `http://localhost:${wsPort}/`;
 var server = new Server({server_port:port});
@@ -25,6 +26,7 @@ describe("Basic server/client chat for webSocket", function(){
 
   it("should allow client to connect", function(done) {
     var client = new ClientWs(wsUrl);
+    co(client.start).catch((err) => {expect(false).to.be(true)});
 
     server.once('base:registered_client', function(device) {
       expect(Object.keys(server._clientsList).length).to.be(1);
@@ -34,13 +36,15 @@ describe("Basic server/client chat for webSocket", function(){
       done();
     });
 
-    client.connect(function(){console.log('client connect')});
-  })
+     client.connect();  
+   })
 
 
   it("should support a very simple rpc definition & call", function(done){
 
     var client = new ClientWs(wsUrl);
+    co(client.start).catch((err) => {expect(false).to.be(true)});
+
     //very simple RPC design
 
     client.register_rpc("math", "sum", function* (a, b) {
@@ -59,12 +63,9 @@ describe("Basic server/client chat for webSocket", function(){
       done();
     });
 
-     client.connect(function(){console.log('client connect')});
+     client.connect();
 
   })
 
 });
 
-
-
-*/
