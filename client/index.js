@@ -97,6 +97,9 @@ class Client extends Events {
     }, ctx);
   }
 
+  beforeRegistration(){
+    //can be overwrite
+  }
 
   * start () {
 
@@ -110,7 +113,6 @@ class Client extends Events {
 
     // Directly send register
 
-    var opts = Object.assign({client_key : this.client_key}, this.options.registration_parameters);
     var wait = defer();
 
     do {
@@ -129,6 +131,9 @@ class Client extends Events {
         });
 
         this.connected = true;
+
+        this.beforeRegistration();
+        var opts = Object.assign({client_key : this.client_key}, this.options.registration_parameters);
         yield this.send('base', 'register', opts);
         this.emit('registered').catch(this.log.error);
         this.emit('connected').catch(this.log.error);
