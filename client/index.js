@@ -110,7 +110,7 @@ class Client extends Events {
 
     // Directly send register
 
-    var opts = Object.assign({client_key : self.client_key}, self.options.registration_parameters);
+    var opts = Object.assign({client_key : this.client_key}, this.options.registration_parameters);
     var wait = defer();
 
     do {
@@ -128,13 +128,11 @@ class Client extends Events {
            wait.reject();
         });
 
-        yield self.send('base', 'register', opts);
-        self.emit("registered").catch(self.log.error);
-
-        self.log.info('Client has been registered');
-
         this.connected = true;
-        this.emit("connected");
+        yield this.send('base', 'register', opts);
+        this.emit('registered').catch(this.log.error);
+        this.emit('connected').catch(this.log.error);
+        this.log.info('Client has been registered');
 
         do {
           wait = defer();
@@ -155,14 +153,18 @@ class Client extends Events {
         } while(true);
 
       } catch(err) {
-        self.log.error("" + err)
+        this.log.error("" + err)
         if(this._transport)
           this._transport.destroy();
 
         this._transport = null;
 
+        if(this.connected) {
+          this.connected = false;
+          this.emit('disconnected', err).catch(this.log.error);
+        }
+
         this.connected = false;
-        this.emit("disconnected", err);
         if(this.shouldStop)
           continue; //no need to wait
         yield sleep(this.options.reconnect_delay);

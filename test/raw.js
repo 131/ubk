@@ -26,7 +26,7 @@ function cothrow(generator){
   }));
 }
 
-describe("Basic server/client chat", function(){
+describe("Raw server/client chat", function(){
 
   it("must start the server", function(done){
     server.start(function(){
