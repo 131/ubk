@@ -60,11 +60,11 @@ class ProxyServer extends Server {
     this._client = new Client(options.client)
 
     this._client.beforeRegistration = function(){
-      this._client.options.registration_parameters = {
-        sub_Clients_list  : pluck(this._clientsList, 'registration_parameters'),
+      self._client.options.registration_parameters = {
+        sub_Clients_list  : pluck(self._clientsList, 'registration_parameters'),
         type              : 'slave',
-        address           : this.address,
-        port              : this.options.server_port
+        address           : self.address,
+        port              : self.options.server_port
       }
     }
 
