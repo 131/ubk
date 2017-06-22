@@ -83,7 +83,7 @@ describe("Basic server/client chat", function(){
     co(client.start).catch((err) => {expect(err).to.be(true)});
 
     client.connect()
-    client.on('connected', function() {
+    client.once('connected', function() {
       cothrow(function*(){
         try {
           yield client.send("base", "register", {client_key : "foo" });
@@ -95,8 +95,9 @@ describe("Basic server/client chat", function(){
       });
     })
 
-    client.on('disconnected', function(){
+    client.once('disconnected', function(){
       next("disconnect");
+      client.disconnect();
     });
 
   })
@@ -109,6 +110,7 @@ describe("Basic server/client chat", function(){
 
     var clienta = new Client({server_port:port, client_key : "AAA"});
     var clientb = new Client({server_port:port, client_key : "AAA"});
+
     co(clienta.start).catch((err) => {expect(err).to.be(true)});
     co(clientb.start).catch((err) => {expect(err).to.be(true)});
 
@@ -127,8 +129,11 @@ describe("Basic server/client chat", function(){
           clientb.on('connected', function(){
             expect().fail("Should not be connected");
           })
-          clientb.on('disconnected', function(err){
+          clientb.once('disconnected', function(err){
             expect(err).to.match(/Client 'AAA' already exists/)
+
+            expect(Object.keys(server._clientsList).length).to.be(1); //only clienta
+            clientb.disconnect();
             done();
           });
       });

@@ -18,7 +18,7 @@ class Client extends Events {
   constructor(options) {
     super();
     this.options     = Object.assign({
-      reconnect_delay : 1000,
+      reconnect_delay : 2 * 1000,
     }, options || {});
     this._call_stack = {},
     this._rpcs       = {},
@@ -163,6 +163,8 @@ class Client extends Events {
 
         this.connected = false;
         this.emit("disconnected", err);
+        if(this.shouldStop)
+          continue; //no need to wait
         yield sleep(this.options.reconnect_delay);
       }
 

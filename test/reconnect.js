@@ -42,7 +42,7 @@ describe("Reconnect stress", function(){
   });
 
 
-  it("should disconnect a client that register multiple times", function(done) {
+  it("should test reconnect", function(done) {
 
     var client = new Client({server_port:port, reconnect_delay : 0});
     co(client.start).catch((err) => {expect(false).to.be(true)});
@@ -61,8 +61,10 @@ describe("Reconnect stress", function(){
       }));
 
       client.once('disconnected', detach(function() {
-        expect(Object.keys(server._clientsList).length).to.be(0);
-        dostuff();
+        setTimeout(function() {
+          expect(Object.keys(server._clientsList).length).to.be(0);
+          dostuff();
+        }, 20);
       }))
     }
 
