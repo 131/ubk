@@ -13,8 +13,8 @@ const Server = require('../server');
 const Client = require('../client/tcp');
 
 
-var port = 3003;
-var server = new Server({server_port:port});
+var server = new Server({server_port : 0});
+var port   = -1;
 
 function cothrow(generator){
   co(generator).catch(detach(function(error) {
@@ -22,11 +22,12 @@ function cothrow(generator){
   }));
 }
 
-describe("Basic server/client chat", function(){
-  this.timeout(20 * 1000)
+describe("Reconnect stress", function(){
+  this.timeout(60 * 1000)
 
   it("must start the server", function(done){
     server.start(function(){
+      port = server.options.server_port;
       done();
     });
 
@@ -43,7 +44,7 @@ describe("Basic server/client chat", function(){
 
   it("should disconnect a client that register multiple times", function(done) {
 
-    var client = new Client({server_port:port});
+    var client = new Client({server_port:port, reconnect_delay : 0});
     co(client.start).catch((err) => {expect(false).to.be(true)});
 
     var loop = 0;
@@ -52,17 +53,17 @@ describe("Basic server/client chat", function(){
         return done();
 
       client.connect()
-      client.on('connected', function() {
-        client.disconnect();
-        client.disconnect();
-      })
+      client.once('connected', detach(function() {
+        expect(Object.keys(server._clientsList).length).to.be(1);
 
-      client.on('disconnected', function(){
-        setTimeout(function(){ //let 20ms for the server to process
-            expect(Object.keys(server._clientsList).length).to.be(0);
-            dostuff();
-        }, 20);
-      })
+        client.disconnect();
+        client.disconnect();
+      }));
+
+      client.once('disconnected', detach(function() {
+        expect(Object.keys(server._clientsList).length).to.be(0);
+        dostuff();
+      }))
     }
 
     dostuff();

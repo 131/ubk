@@ -16,8 +16,9 @@ const net = require('net');
 
 const trim = require("mout/string/trim");
 const DELIMITER = String.fromCharCode(27);
-var port = 3002;
-var server = new Server({server_port:port});
+
+var server = new Server({server_port : 0});
+var port   = -1;
 
 function cothrow(generator){
   co(generator).catch(detach(function(error) {
@@ -29,6 +30,7 @@ describe("Basic server/client chat", function(){
 
   it("must start the server", function(done){
     server.start(function(){
+      port = server.options.server_port;
       done();
     });
 

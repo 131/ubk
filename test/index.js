@@ -15,8 +15,8 @@ const Client = require('../client/tcp');
 
 
 
-var port = 3000;
-var server = new Server({server_port:port});
+var server = new Server({server_port : 0});
+var port   = -1;
 
 function cothrow(generator){
   co(generator).catch(detach(function(error) {
@@ -29,6 +29,7 @@ describe("Basic server/client chat", function(){
   
   it("must start the server", function(done){
     server.start(function(){
+      port = server.options.server_port;
       done();
     });
 
@@ -156,7 +157,7 @@ describe("Basic server/client chat", function(){
             "family": "IPv4",
             "port": lnkPort,
           },
-          "port": 3000,
+          "port": port,
           "type": "tcp",
         });
 

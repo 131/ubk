@@ -15,9 +15,11 @@ const evtmsk = function(ns, cmd, space) {
 }
 
 class Client extends Events {
-  constructor(options){
+  constructor(options) {
     super();
-    this.options     = options || {};
+    this.options     = Object.assign({
+      reconnect_delay : 1000,
+    }, options || {});
     this._call_stack = {},
     this._rpcs       = {},
     this.log = {
@@ -122,7 +124,7 @@ class Client extends Events {
 
         this._transport = yield this.transport();
         this._transport.on('message', this._onMessage.bind(this));
-        this._transport.once('error' , function(){
+        this._transport.once('error' , function() {
            wait.reject();
         });
 
@@ -161,7 +163,7 @@ class Client extends Events {
 
         this.connected = false;
         this.emit("disconnected", err);
-        yield sleep(4000);
+        yield sleep(this.options.reconnect_delay);
       }
 
 

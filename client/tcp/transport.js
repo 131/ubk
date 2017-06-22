@@ -13,8 +13,11 @@ class TCPTransport extends Events {
     this._buffer = new Buffer(0);
 
     socket.on('data', this.receive.bind(this));
+
     socket.once('error', this.emit.bind(this, 'error'));
-    socket.once('end',   this.emit.bind(this, 'error'));
+    socket.once('end', this.emit.bind(this, 'error'));
+    socket.once('close', this.emit.bind(this, 'error'));
+
   }
 
   // Low level method to send JSON data
@@ -43,9 +46,9 @@ class TCPTransport extends Events {
   destroy() {
     this.off('message');
 
-    if(this._socket) {
+    if(this._socket)
       this._socket.destroy();
-    }
+
     this._socket = null;
   }
 
