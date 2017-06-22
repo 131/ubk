@@ -59,16 +59,16 @@ class ProxyServer extends Server {
 
     this._client = new Client(options.client)
 
-    this._client.beforeRegistration = function(){
+    this._client.on('before_registration', function(){
       self._client.options.registration_parameters = {
         sub_Clients_list  : pluck(self._clientsList, 'registration_parameters'),
         type              : 'slave',
         address           : self.address,
         port              : self.options.server_port
       }
-    }
+    })
 
-    co(client.start).catch((err) => {console.log(err.stack)});
+    co(this._client.start).catch((err) => {console.log(err.stack)});
     
     this._client.on('message' , function*(data){
       if(data.ns == 'base' && data.cmd == 'ping')

@@ -97,10 +97,6 @@ class Client extends Events {
     }, ctx);
   }
 
-  beforeRegistration(){
-    //can be overwrite
-  }
-
   * start () {
 
     var self = this;
@@ -133,6 +129,7 @@ class Client extends Events {
         this.connected = true;
 
         this.beforeRegistration();
+        this.emit('before_registration');
         var opts = Object.assign({client_key : this.client_key}, this.options.registration_parameters);
         yield this.send('base', 'register', opts);
         this.emit('registered').catch(this.log.error);
