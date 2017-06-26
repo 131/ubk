@@ -68,8 +68,6 @@ describe("Basic server/client chat", function(){
     console.log("Connecting client");
     var client = new Client({server_port:port});
 
-    co(client.start).catch((err) => {console.log(err.stack)});
-
     client.connect();
 
     client.once('connected', function*() {
@@ -95,7 +93,6 @@ describe("Basic server/client chat", function(){
 
   it("should test client crash", function(done){
     var client = new Client({server_port:port});
-    co(client.start).catch((err) => {console.log(err.stack)});
     client.connect();
 
     client.register_rpc("client", "crash", function*(){
@@ -123,7 +120,6 @@ describe("Basic server/client chat", function(){
     var currentClients = Object.keys(server._clientsList).length;
     var client = new Client({server_port:port});
 
-    co(client.start).catch((err) => {console.log(err.stack)});
     client.connect();
 
     var network_challenge = null;
@@ -182,7 +178,6 @@ describe("Basic server/client chat", function(){
   it("should support a very simple rpc definition & call", function(done){
     var client = new Client({server_port:port});
 
-    co(client.start).catch((err) => {console.log(err.stack)});
 
     //very simple RPC design
     client.register_rpc("math", "sum", function* (a, b){
@@ -224,7 +219,6 @@ describe("Basic server/client chat", function(){
 
     range(0,10).forEach( function(i){
       var client = new Client({server_port:port, client_key:pfx + i});
-      co(client.start).catch((err) => {console.log(err.stack)});
 
       client.once("registered", function(){
         connectedClients ++;

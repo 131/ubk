@@ -14,6 +14,8 @@ const evtmsk = function(ns, cmd, space) {
   return `_${ns}:${cmd}:${space||''}`;
 }
 
+const EVENT_START_LOOP = guid(); //private
+
 class Client extends Events {
   constructor(options) {
     super();
@@ -30,7 +32,8 @@ class Client extends Events {
       return Promise.resolve("pong");
     });
     this.shouldStop = true;
-    this.start = this.start.bind(this);
+    this.once(EVENT_START_LOOP, this._run, this);
+
   }
 
   respond(query, response, error){
@@ -97,7 +100,7 @@ class Client extends Events {
     }, ctx);
   }
 
-  * start () {
+  * _run () {
 
     var self = this;
 
@@ -183,6 +186,7 @@ class Client extends Events {
 
 
   connect(host, port) {
+    this.emit(EVENT_START_LOOP).catch(this.log.error)
     this.options.server_hostaddr = host || this.options.server_hostaddr ;
     this.options.server_port     = port || this.options.server_port;
     this.shouldStop = false;

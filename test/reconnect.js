@@ -45,7 +45,6 @@ describe("Reconnect stress", function(){
   it("should test reconnect", function(done) {
 
     var client = new Client({server_port:port, reconnect_delay : 0});
-    co(client.start).catch((err) => {expect(false).to.be(true)});
 
     var loop = 0;
     function dostuff(){

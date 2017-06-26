@@ -80,7 +80,6 @@ describe("Raw server/client chat", function(){
       if(next["error"] && next["disconnect"])
         done();
     };
-    co(client.start).catch((err) => {expect(err).to.be(true)});
 
     client.connect()
     client.once('connected', function() {
@@ -110,9 +109,6 @@ describe("Raw server/client chat", function(){
 
     var clienta = new Client({server_port:port, client_key : "AAA"});
     var clientb = new Client({server_port:port, client_key : "AAA"});
-
-    co(clienta.start).catch((err) => {expect(err).to.be(true)});
-    co(clientb.start).catch((err) => {expect(err).to.be(true)});
 
 
     console.log("Connecting client");

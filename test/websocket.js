@@ -26,7 +26,6 @@ describe("Basic server/client chat for webSocket", function(){
 
   it("should allow client to connect", function(done) {
     var client = new ClientWs(wsUrl);
-    co(client.start).catch((err) => {expect(false).to.be(true)});
 
     server.once('base:registered_client', function(device) {
       expect(Object.keys(server._clientsList).length).to.be(1);
@@ -43,7 +42,6 @@ describe("Basic server/client chat for webSocket", function(){
   it("should support a very simple rpc definition & call", function(done){
 
     var client = new ClientWs(wsUrl);
-    co(client.start).catch((err) => {expect(false).to.be(true)});
 
     //very simple RPC design
 
