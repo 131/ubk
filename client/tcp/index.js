@@ -3,7 +3,7 @@ const net     = require('net');
 const tls     = require('tls');
 const guid    = require('mout/random/guid');
 const defer   = require('nyks/promise/defer');
-
+const url     = require('url');
 const TCPTransport = require('./transport');
 const Client = require('../');
 
@@ -34,58 +34,57 @@ class TCPClient extends Client {
     }
   }
 
-
-  // Initialize a cleartext tcp socket
-  build_net_socket(callback) {
-    var lnk = {
-      host : this.options.server_hostaddr,
-      port : this.options.server_port,
-    };
-    this.log.info("Connecting with cleartext to %s:%s", lnk.host, lnk.port);
-    return net.connect(lnk, callback);
+  *build_proxy_socket(){
+    if(!this.options.PROXY)
+      return null;
+    var defered = defer();
+    var proxy_url = url.parse(this.options.PROXY);
+    this.log.info(`using proxy ${proxy_url.host}`)
+    if(!proxy_url.port || !proxy_url.hostname)
+      defered.reject(`Invalid proxy url '${this.options.PROXY}'`);
+    var socket = net.createConnection(proxy_url.port, proxy_url.hostname, defered.chain);
+    var handshake = `CONNECT ${this.options.server_hostaddr}:${this.options.server_port} HTTP/1.0\r\n\r\n`;
+    socket.write(handshake);
+    const success = new RegExp("^HTTP/[0-9.]+\\s+200");
+    defered = defer();
+    socket.once("data", (data) => {
+      var i = data.indexOf("\r\n\r\n");
+      if(i == -1)
+        return defered.reject("No remote connection");
+      var header = "" + data.slice(0, i);
+      if(!success.test(header))
+        return defered.reject(`Invalid proxy response '${header}'`);
+      this.log.info(`connection to proxy established ${header}`)
+      defered.resolve(socket);
+    });
+    return defered;
   }
-  
 
-  // Initialier a crypted TLS socket
-  build_tls_socket(callback) {
 
-    if(!this._tls.key)
-      throw new Error("Missing private key");
-    if(!this._tls.cert)
-      throw new Error("Missing certificate");
+  // Connect to the server
+  *transport () {
+    var host = this.options.server_hostaddr;
+    var port = this.options.server_port;
+    this.log.info(`try to connect to ${host}:${port}`);
 
-    // Setup TLS connection
-    var lnk = Object.assign({
-      host               : this.options.server_hostaddr,
-      port               : this.options.server_port,
+    // Secured or clear method ?
+    var is_secured    = !!(this._tls.key && this._tls.cert);
+    var socket = yield this.build_proxy_socket();
+    var lnk = socket ? {socket} : {host, port};
+
+    lnk = Object.assign(lnk, {
       rejectUnauthorized : false,
       servername         : this.options.server_hostname.toLowerCase(),
     }, this._tls);
-
-
-    this.log.info("Connecting with TLS to %s:%s", lnk.host, lnk.port, lnk.servername);
-
-    // TLS socket with options & callback
-    return tls.connect(lnk, callback);
-  }
-
-  // Connect to the server
-  * transport () {
-
-    this.log.info('try to connect !!');
-    // Secured or clear method ?
-    var is_secured    = !!(this._tls.key && this._tls.cert);
-
-    var socket_method = is_secured ? this.build_tls_socket : this.build_net_socket;
+      
+    var connect_method = is_secured ? tls : net;
     var connect = defer();
-    var socket = socket_method.call(this, connect.chain);
-      //bind socket error before connecting
+    var socket = connect_method.connect(lnk , connect.chain);
     socket.once('error', connect.chain);
     yield connect;
 
     return new TCPTransport(socket);
   }
-
 }
 
 module.exports = TCPClient;
