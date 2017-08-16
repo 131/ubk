@@ -131,7 +131,7 @@ class Client extends Events {
 
         this.connected = true;
 
-        this.emit('before_registration');
+        this.emit('before_registration').catch(this.log.error);
         var opts = Object.assign({client_key : this.client_key}, this.options.registration_parameters);
         yield this.send('base', 'register', opts);
         this.emit('registered').catch(this.log.error);
@@ -157,6 +157,7 @@ class Client extends Events {
         } while(true);
 
       } catch(err) {
+        wait.resolve(); //make sure not unHandler promise can trigger
         this.log.error("" + err)
         if(this._transport)
           this._transport.destroy();

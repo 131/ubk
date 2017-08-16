@@ -34,16 +34,14 @@ class TCPClient extends Client {
     }
   }
 
-  *build_proxy_socket(){
-    if(!this.options.PROXY)
-      return null;
+  * build_proxy_socket(socket){
     var defered = defer();
     var proxy_url = url.parse(this.options.PROXY);
     this.log.info(`using proxy ${proxy_url.host}`)
     if(!proxy_url.port || !proxy_url.hostname)
       defered.reject(`Invalid proxy url '${this.options.PROXY}'`);
     var socket = net.createConnection(proxy_url.port, proxy_url.hostname, defered.chain);
-    var handshake = `CONNECT ${this.options.server_hostaddr}:${this.options.server_port} HTTP/1.0\r\n\r\n`;
+    var handshake = `CONNECT ${socket.host}:${socket.port} HTTP/1.0\r\n\r\n`;
     socket.write(handshake);
     const success = new RegExp("^HTTP/[0-9.]+\\s+200");
     defered = defer();
@@ -62,21 +60,25 @@ class TCPClient extends Client {
 
 
   // Connect to the server
-  *transport () {
-    var host = this.options.server_hostaddr;
-    var port = this.options.server_port;
-    this.log.info(`try to connect to ${host}:${port}`);
-
-    // Secured or clear method ?
+  * transport () {
+    var lnk = {
+      host : this.options.server_hostaddr,
+      port : this.options.server_port,
+    };
     var is_secured    = !!(this._tls.key && this._tls.cert);
-    var socket = yield this.build_proxy_socket();
-    var lnk = socket ? {socket} : {host, port};
 
-    lnk = Object.assign(lnk, {
-      rejectUnauthorized : false,
-      servername         : this.options.server_hostname.toLowerCase(),
-    }, this._tls);
-      
+    this.log.info(`try to connect to ${lnk.host}:${lnk.port}`);
+
+    if(this.options.PROXY)
+      lnk = {socket : yield this.build_proxy_socket(lnk) };
+
+    if(is_secured) {
+      Object.assign(lnk, {
+        rejectUnauthorized : false,
+        servername         : this.options.server_hostname.toLowerCase(),
+      }, this._tls);
+    }
+
     var connect_method = is_secured ? tls : net;
     var connect = defer();
     var socket = connect_method.connect(lnk , connect.chain);

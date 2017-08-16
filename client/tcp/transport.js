@@ -2,21 +2,33 @@
 
 const once    = require('nyks/function/once');
 const Events  = require('eventemitter-co');
+const debug = require('debug');
 
 const Delimiter = 27;
+
+
 
 class TCPTransport extends Events {
 
   constructor(socket){
     super();
+
+    this.log = {
+      error : debug("ubk:client:tcp"),
+      info  : debug("ubk:client:tcp")
+    };
+
     this._socket = socket;
     this._buffer = new Buffer(0);
 
     socket.on('data', this.receive.bind(this));
 
-    socket.once('error', this.emit.bind(this, 'error'));
-    socket.once('end', this.emit.bind(this, 'error'));
-    socket.once('close', this.emit.bind(this, 'error'));
+    var error = (err) =>  {
+      this.emit('error', err).catch(this.log.error);
+    };
+    socket.once('error', error);
+    socket.once('end', error);
+    socket.once('close', error);
 
   }
 
@@ -39,7 +51,7 @@ class TCPTransport extends Events {
       } catch(e) {
         this.log.error("Parsing response failed: "+e);
       }
-      this.emit('message', data);
+      this.emit('message', data).catch(this.log.error);
     }
   }
 
