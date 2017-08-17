@@ -34,14 +34,14 @@ class TCPClient extends Client {
     }
   }
 
-  * build_proxy_socket(socket){
+  * build_proxy_socket(socket_info){
     var defered = defer();
     var proxy_url = url.parse(this.options.PROXY);
     this.log.info(`using proxy ${proxy_url.host}`)
     if(!proxy_url.port || !proxy_url.hostname)
       defered.reject(`Invalid proxy url '${this.options.PROXY}'`);
     var socket = net.createConnection(proxy_url.port, proxy_url.hostname, defered.chain);
-    var handshake = `CONNECT ${socket.host}:${socket.port} HTTP/1.0\r\n\r\n`;
+    var handshake = `CONNECT ${socket_info.host}:${socket_info.port} HTTP/1.0\r\n\r\n`;
     socket.write(handshake);
     const success = new RegExp("^HTTP/[0-9.]+\\s+200");
     defered = defer();
