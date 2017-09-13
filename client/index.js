@@ -140,12 +140,12 @@ class Client extends Events {
 
         do {
           wait = defer();
-          setTimeout(wait.reject, 10000);
-          var response = await Promise.all([async function() {
+          setTimeout(wait.reject.bind(wait, 'timeout !!!'), 10000);
+          var response = await Promise.all([(async function() {
             var response = await self.send("base" , "ping");
             if(response != "pong")
               throw "Invalid ping challenge reponse";
-            wait.resolve()}
+            wait.resolve()})()
           , wait]);
 
           if(this.shouldStop)
