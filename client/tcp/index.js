@@ -34,7 +34,7 @@ class TCPClient extends Client {
     }
   }
 
-  * build_proxy_socket(socket_info){
+  async build_proxy_socket(socket_info){
     var defered = defer();
     var proxy_url = url.parse(this.options.PROXY);
     this.log.info(`using proxy ${proxy_url.host}`)
@@ -60,7 +60,7 @@ class TCPClient extends Client {
 
 
   // Connect to the server
-  * transport () {
+  async transport () {
     var lnk = {
       host : this.options.server_hostaddr,
       port : this.options.server_port,
@@ -70,7 +70,7 @@ class TCPClient extends Client {
     this.log.info(`try to connect to ${lnk.host}:${lnk.port}`);
 
     if(this.options.PROXY)
-      lnk = {socket : yield this.build_proxy_socket(lnk) };
+      lnk = {socket : await this.build_proxy_socket(lnk) };
 
     if(is_secured) {
       Object.assign(lnk, {
@@ -83,7 +83,7 @@ class TCPClient extends Client {
     var connect = defer();
     var socket = connect_method.connect(lnk , connect.chain);
     socket.once('error', connect.chain);
-    yield connect;
+    await connect;
 
     return new TCPTransport(socket);
   }
