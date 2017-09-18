@@ -255,10 +255,11 @@ const Server = new Class({
 
 
   broadcast : function (ns, cmd, payload) {
+    var args = arguments;
     this.log.info("BROADCASTING ", ns, cmd);
 
     forIn(this._clientsList, function(client) {
-      client.signal(ns, cmd, payload);
+      client.signal.apply(client, args);
     });
 
     this.emit(`${ns}:${cmd}`, payload).catch(this.log.error);
