@@ -97,8 +97,11 @@ var Client = module.exports = new Class({
     this.emit('received_cmd', remote, data).catch(this.log.error);
   },
 
-  signal : function(ns, cmd, args) {
-    var query = {ns, cmd, args };
+  signal : function(ns, cmd/*, payload[, xargs..] */) {
+    var xargs = [].slice.call(arguments, 2),
+        args  = xargs.shift();
+
+    var query = {ns, cmd, args, xargs };
     try{
       this.write(query);
     }catch(err){
