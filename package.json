@@ -1,6 +1,6 @@
 {
   "name": "ubk",
-  "version": "4.0.12",
+  "version": "4.1.0",
   "description": "micro message broker",
   "main": "index.js",
   "scripts": {
