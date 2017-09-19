@@ -28,7 +28,7 @@ class Client extends Events {
       error : debug("ubk:client"),
       info  : debug("ubk:client")
     };
-    this.register_rpc('base', 'ping', function *(){
+    this.register_rpc('base', 'ping', async function(){
       return Promise.resolve("pong");
     });
     this.shouldStop = true;
@@ -75,12 +75,12 @@ class Client extends Events {
   }
 
 
-  * call(ns, cmd) {
+  async call(ns, cmd) {
     var args = [].slice.call(arguments, 2);
     var proc = this._rpcs[evtmsk(ns, cmd, 'rpc')];
     if(!proc)
       throw "Invalid rpc command";
-    return yield proc.callback.apply(proc.ctx || this, args);
+    return await proc.callback.apply(proc.ctx || this, args);
   }
 
 
@@ -89,18 +89,18 @@ class Client extends Events {
 
     this._rpcs[evtmsk(ns, cmd, 'rpc')] = {callback, ctx};
 
-    this.register_cmd(ns, cmd, function* (client, query) {
+    this.register_cmd(ns, cmd, async function(client, query) {
       var response, err;
       try {
         var args = [query.args].concat(query.xargs || []);
-        response = yield callback.apply(this, args);
+        response = await callback.apply(this, args);
       } catch(error) { err = ""+ error; }
 
       client.respond(query, response, err);
     }, ctx);
   }
 
-  * _run () {
+  async _run () {
 
     var self = this;
 
@@ -117,13 +117,13 @@ class Client extends Events {
     do {
 
       if(this.shouldStop) {
-        yield sleep(200);
+        await sleep(200);
         continue;
       }
 
       try {
 
-        this._transport = yield this.transport();
+        this._transport = await this.transport();
         this._transport.on('message', this._onMessage.bind(this));
         this._transport.once('error' , function() {
            wait.reject();
@@ -133,27 +133,27 @@ class Client extends Events {
 
         this.emit('before_registration').catch(this.log.error);
         var opts = Object.assign({client_key : this.client_key}, this.options.registration_parameters);
-        yield this.send('base', 'register', opts);
+        await this.send('base', 'register', opts);
         this.emit('registered').catch(this.log.error);
         this.emit('connected').catch(this.log.error);
         this.log.info('Client has been registered');
 
         do {
           wait = defer();
-          setTimeout(wait.reject, 10000);
-          var response = yield [ function * () {
-            var response = yield self.send("base" , "ping");
+          setTimeout(wait.reject.bind(wait, 'timeout !!!'), 10000);
+          var response = await Promise.all([(async function() {
+            var response = await self.send("base" , "ping");
             if(response != "pong")
               throw "Invalid ping challenge reponse";
-            wait.resolve()}
-          , wait];
+            wait.resolve()})()
+          , wait]);
 
           if(this.shouldStop)
             throw "Should stop everything";
 
           wait = defer();
           setTimeout(wait.resolve, 10000);
-          yield wait;
+          await wait;
         } while(true);
 
       } catch(err) {
@@ -161,7 +161,7 @@ class Client extends Events {
         this.log.error("" + err)
         if(this._transport)
           this._transport.destroy();
-
+        
         this._transport = null;
 
         if(this.connected) {
@@ -172,7 +172,7 @@ class Client extends Events {
         this.connected = false;
         if(this.shouldStop)
           continue; //no need to wait
-        yield sleep(this.options.reconnect_delay);
+        await sleep(this.options.reconnect_delay);
       }
 
 
