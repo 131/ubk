@@ -133,7 +133,9 @@ class Client extends Events {
 
         this.emit('before_registration').catch(this.log.error);
         var opts = Object.assign({client_key : this.client_key}, this.options.registration_parameters);
-        yield this.send('base', 'register', opts);
+        var registerTimeout =  defer();
+        setTimeout(registerTimeout.reject, 2000);
+        yield Promise.race([this.send('base', 'register', opts) , registerTimeout]);
         this.emit('registered').catch(this.log.error);
         this.emit('connected').catch(this.log.error);
         this.log.info('Client has been registered');
@@ -141,12 +143,9 @@ class Client extends Events {
         do {
           wait = defer();
           setTimeout(wait.reject, 10000);
-          var response = yield [ function * () {
-            var response = yield self.send("base" , "ping");
-            if(response != "pong")
-              throw "Invalid ping challenge reponse";
-            wait.resolve()}
-          , wait];
+          var response =  yield Promise.race([this.send('base', 'ping') , wait]);
+          if(response != "pong")
+            throw "Invalid ping challenge reponse";
 
           if(this.shouldStop)
             throw "Should stop everything";
