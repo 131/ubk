@@ -24,7 +24,8 @@ class ProxyServer extends Server {
 
     this.on('registered_device', function*(client, args){
       try{
-        args.client_key = client.client_key; //force client_key
+        args.client_key  = client.client_key; //force client_key
+        args.export_json = client.export_json();
         yield self._client.send('base', 'register_sub_client', args);
       }catch(err){
         return client.disconnect("cant register client " + client.client_key);
@@ -33,6 +34,7 @@ class ProxyServer extends Server {
       console.log("register sub_client " , client.client_key);
 
       client.registration_parameters = args; //save registration args
+      client.registration_parameters.export_json = client.export_json();
 
       client.on('received_cmd', function*(client, data){
         if(data.ns == 'base' &&  data.cmd == 'ping')

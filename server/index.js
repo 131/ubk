@@ -116,6 +116,11 @@ const Server = new Class({
       throw `Client '${sub_client_key}' already exists, sorry`;
     var validated_data = yield this.validate_sub_client(sub_client_key, client_capability);
     var sub_client = client.add_sub_client(sub_client_key);
+    sub_client.export_json = () => {
+      var status     = sub_client_registrationargs.export_json;
+      status.uptime  = Math.floor((Date.now()/1000 - status.registration_time));
+      return status;
+    }
     this.emit('register_sub_client', sub_client, validated_data).catch(this.log.error);
   },
 
