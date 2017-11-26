@@ -6,7 +6,8 @@
   "scripts": {
     "coveralls": "npm install coveralls && node ./node_modules/coveralls/bin/coveralls.js < ./coverage/lcov.info",
     "discify": "browserify --ignore cnyks --node -p discify index.js | discify-reporter --ir://run --source=disc/graph.json",
-    "test": "node node_modules/istanbul-alpha-instrument/lib/cli.js cover --report text-summary --report html --report lcov  node_modules/mocha/bin/_mocha",
+    "cover": "node node_modules/istanbul-alpha-instrument/lib/cli.js cover --report text-summary --report html --report lcov  node_modules/mocha/bin/_mocha",
+    "test": "npm run checkall && npm run cover",
     "jscs": "jscs --config=node_modules/ivs-jssc/ivs-node.jscsrc server client",
     "eslint": "eslint --config=node_modules/ivs-jssc/ivs-node.eslintrc.js server client",
     "checkall" : "npm run eslint && npm run jscs"
