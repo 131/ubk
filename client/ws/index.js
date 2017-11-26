@@ -1,22 +1,19 @@
 "use strict";
-
+/* eslint-env browser */
 
 const guid    = require('mout/random/guid');
-const once    = require('nyks/function/once');
-const merge   = require('mout/object/merge');
-const defer   = require('nyks/promise/defer');
 
 const Client  = require('../');
 const WSTransport = require('./transport');
 
 
 
-class WSClient extends Client{
-  constructor(url , options){
+class WSClient extends Client {
+  constructor(url, options) {
     options = Object.assign({
       registration_parameters : {},
     }, options);
-    super(options)
+    super(options);
     this.url = '';
     this._socket = null;
     this.client_key = null;
@@ -24,14 +21,13 @@ class WSClient extends Client{
     this.client_key  = guid();
   }
 
-  * transport () {
-    this.log.info('try to connect !!');
+  async transport () {
     // Secured or clear method ?
-    var socket = new WebSocket(this.url) ;
-    var connect = defer();
-    socket.onopen = connect.resolve
+    var socket = new WebSocket(this.url);
 
-    yield connect;
+    await new Promise((resolve) => {
+      socket.onopen = resolve;
+    });
 
     return new WSTransport(socket);
   }

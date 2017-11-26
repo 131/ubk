@@ -2,8 +2,6 @@
 
 
 const expect = require('expect.js');
-const async  = require('async');
-const co       = require('co');
 
 const stripStart = require('nyks/string/stripStart');
 const detach   = require('nyks/function/detach');
@@ -16,11 +14,7 @@ const Client = require('../client/tcp');
 var server = new Server({server_port : 0});
 var port   = -1;
 
-function cothrow(generator){
-  co(generator).catch(detach(function(error) {
-    throw error;
-  }));
-}
+
 
 describe("Reconnect stress", function(){
   this.timeout(60 * 1000)
@@ -31,14 +25,11 @@ describe("Reconnect stress", function(){
       done();
     });
 
-    server.register_rpc('base', 'crash', function* () {
+    server.register_rpc('base', 'crash', () => {
       throw "This is an error"
     });
 
-    server.register_rpc('base', 'echo', function* (payload){
-      return Promise.resolve(payload);
-    });
-
+    server.register_rpc('base', 'echo', payload => payload);
   });
 
 

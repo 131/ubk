@@ -1,7 +1,6 @@
 "use strict";
 
 
-const Class   = require('uclass');
 const guid    = require('mout/random/guid');
 const defer   = require('nyks/promise/defer');
 const Events  = require('eventemitter-co');
@@ -11,75 +10,70 @@ const TCPTransport = require('./transport/tcp');
 const WSTransport  = require('./transport/ws');
 const SubClient    = require('./subClient');
 
-const logPing = debug("ubk:server:ping")
+const log = {
+  info  : debug('ubk:server:client'),
+  error : debug('ubk:server:client'),
+  ping  : debug('ubk:server:ping')
+};
 
 
-var Client = module.exports = new Class({
-  Implements : [Events],
+class Client extends Events {
 
-  Binds : [ 'receive', 'disconnect'],
+  constructor(type, stream) {
+    super();
 
-  // Identification
-  client_key        : null,
-  registration_time : null,
+    // Identification
+    this.client_key        = null;
+    this.registration_time = null;
 
-  // Network : tcp or websocket
-  transport : null,
+    // Network : tcp or websocket
+    this.transport = null;
 
-  // Commands sent
-  _call_stack  : {},
-  _sub_clients : {},
+    // Commands sent
+    this._call_stack  = {};
+    this._sub_clients = {};
 
-  log : {
-    info  : debug("ubk:server:client"),
-    error : debug("ubk:server:client")
-  },
-
-  initialize : function(type, stream){
-    var self = this;
-
-    if(type == "ws")
+    if(type == 'ws')
       this.transport  = new WSTransport(stream);
 
-    if(type == "tcp")
+    if(type == 'tcp')
       this.transport = new TCPTransport(stream);
-    
-    this.type = type;
-    this.transport.once("transport_disconnect", this.disconnected, this);
-    this.transport.on("transport_message",    this.receive);
 
-    var registrationTimeout = setTimeout( () => {
-      this.log.info('Client registration timeout');
-      this.disconnect("timeout");
+    this.type = type;
+    this.transport.once('transport_disconnect', this.disconnected, this);
+    this.transport.on('transport_message',    this.receive, this);
+
+    var registrationTimeout = setTimeout(() => {
+      log.info('Client registration timeout');
+      this.disconnect('timeout');
     }, 5000);
 
-    this.once("registered", () => {
+    this.once('registered', () => {
       clearTimeout(registrationTimeout);
       this.registration_time  = Date.now();
     });
-  },
+  }
 
 
   // Export client configuration
-  export_json : function() {
+  export_json() {
     return {
       client_key    : this.client_key,
-      registration_time : Math.floor(this.registration_time/1000),
-      uptime: Math.floor((Date.now() - this.registration_time) / 1000),
+      registration_time : Math.floor(this.registration_time / 1000),
+      uptime : Math.floor((Date.now() - this.registration_time) / 1000),
       remoteAddress : this.transport.export_json(),
       sub_client_list : Object.keys(this._sub_clients)
     };
-  },
+  }
 
 
   // React to received data
-  receive : function(data) {
+  receive(data) {
     // Debug
-    
-    if(( (data.ns == 'base') && (data.cmd == 'ping') ) || (data.response == 'pong') ){
-      logPing("Received ", data, " from client", this.client_key);
+    if(((data.ns == 'base') && (data.cmd == 'ping')) || (data.response == 'pong')) {
+      log.ping("Received", data, "from client", this.client_key);
     }else {
-      this.log.info("Received ", data, " from client", this.client_key);
+      log.info("Received", data, "from client", this.client_key);
     }
 
     var callback = this._call_stack[data.quid];
@@ -91,29 +85,29 @@ var Client = module.exports = new Class({
 
     var remote         = this;
     var sub_client_key = data.ns && data.ns.sub_client_key;
+
     if(sub_client_key && this._sub_clients[sub_client_key])
-       remote = this._sub_clients[sub_client_key];
+      remote = this._sub_clients[sub_client_key];
 
-    this.emit('received_cmd', remote, data).catch(this.log.error);
-  },
+    this.emit('received_cmd', remote, data).catch(log.error);
+  }
 
-  signal : function(ns, cmd/*, payload[, xargs..] */) {
-    var xargs = [].slice.call(arguments, 2),
-        args  = xargs.shift();
+  signal(ns, cmd/*, payload[, xargs..] */) {
+    var xargs = [].slice.call(arguments, 2);
+    var args  = xargs.shift();
 
-    var query = {ns, cmd, args, xargs };
-    try{
+    var query = {ns, cmd, args, xargs};
+    try {
       this.write(query);
-    }catch(err){
-      this.log.error("can't write in the socket" , err);
-      promise.reject(err);
+    } catch(err) {
+      log.error("can't write in the socket", err);
     }
-  },
+  }
 
 
-  send : function(ns, cmd/*, payload[, xargs..] */) {
-    var xargs = [].slice.call(arguments, 2),
-      args  = xargs.shift();
+  send(ns, cmd/*, payload[, xargs..] */) {
+    var xargs = [].slice.call(arguments, 2);
+    var args  = xargs.shift();
 
     var promise = defer();
     var quid = guid();
@@ -122,23 +116,23 @@ var Client = module.exports = new Class({
     this._call_stack[quid] = { ns, cmd, promise };
 
     if(!(query.ns == 'base' && query.cmd == 'ping'))
-      this.log.info("Send msg '%s:%s' to %s ", query.ns, query.cmd, this.client_key);
+      log.info("Send msg '%s:%s' to %s", query.ns, query.cmd, this.client_key);
 
-    try{
+    try {
       this.write(query);
-    }catch(err){
-      this.log.error("can't write in the socket" , err);
+    } catch(err) {
+      log.error("can't write in the socket", err);
       promise.reject(err);
     }
 
     return promise;
-  },
+  }
 
 
   // Low Level send raw JSON
-  respond: function(query, response, error){
+  respond(query, response, error) {
     if(!(query.ns == 'base' && query.cmd == 'ping'))
-      this.log.info("Responding msg '%s:%s' to %s ", query.ns, query.cmd, this.client_key);
+      log.info("Responding msg '%s:%s' to %s ", query.ns, query.cmd, this.client_key);
 
     query.response = response;
     query.error    = error;
@@ -147,39 +141,40 @@ var Client = module.exports = new Class({
     delete query.ns;
     delete query.xargs;
     delete query.args;
-    try{
+    try {
       this.write(query);
-    }catch(err){
-      this.log.error("can't write in the socket" , err);
+    } catch(err) {
+      log.error("can't write in the socket", err);
     }
-  },
+  }
 
-  write : function(query) {
+  write(query) {
     this.transport.write(query);
-  },
+  }
 
-  disconnect : function(reason) {
+  disconnect(reason) {
     this.transport.disconnect(reason);
-  },
+  }
 
-  disconnected : function(reason) {
-    this.log.info("Client %s disconnected (%s)", this.client_key, reason);
-    this.emit('disconnected', this).catch(this.log.error);
-  },
+  disconnected(reason) {
+    log.info("Client %s disconnected (%s)", this.client_key, reason);
+    this.emit('disconnected', this).catch(log.error);
+  }
 
-  add_sub_client : function(client_key){
+  add_sub_client(client_key) {
     if(this._sub_clients[client_key])
       return this._sub_clients[client_key];
     this._sub_clients[client_key] = new SubClient(this, client_key);
-    this.log.info("sub client %s connect ", client_key);
+    log.info("sub client %s connect", client_key);
     return this._sub_clients[client_key];
-  },
+  }
 
-  remove_sub_client : function(client_key, reason){
-    this.log.info("sub client %s disconnected ", client_key, reason);
-    delete this._sub_clients[client_key]
-  },
+  remove_sub_client(client_key, reason) {
+    log.info("sub client %s disconnected", client_key, reason);
+    delete this._sub_clients[client_key];
+  }
+}
 
 
 
-});
+module.exports = Client;

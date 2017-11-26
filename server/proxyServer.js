@@ -1,100 +1,101 @@
 'use strict';
 
+const debug  = require('debug');
+const pluck  = require('mout/object/pluck');
+
 const Server = require('./index');
 const Client = require('../client/tcp');
-const debug  = require('debug');
-const map    = require('mout/object/map');
-const values = require('mout/object/values');
-const pluck  = require('mout/object/pluck');
-const co     = require('co');
+
+const log = {
+  info  : debug('ubk:server:ProxyServer'),
+  error : debug('ubk:server:ProxyServer')
+};
+
 
 class ProxyServer extends Server {
 
-  constructor(options){
+  constructor(options) {
     super(options.server);
 
     var self = this;
     this.address = options.address;
 
-    this.log = {
-      info  : debug('ubk:server:ProxyServer'),
-      error : debug('ubk:server:ProxyServer')
-    };
-
-
-    this.on('registered_device', function*(client, args){
-      try{
+    this.on('registered_device', async function(client, args) {
+      try {
         args.client_key  = client.client_key; //force client_key
         args.export_json = client.export_json();
-        yield self._client.send('base', 'register_sub_client', args);
-      }catch(err){
+        await self._client.send('base', 'register_sub_client', args);
+      } catch(err) {
         return client.disconnect("cant register client " + client.client_key);
       }
 
-      console.log("register sub_client " , client.client_key);
+      log.info("register sub_client", client.client_key);
 
       client.registration_parameters = args; //save registration args
       client.registration_parameters.export_json = client.export_json();
 
-      client.on('received_cmd', function*(client, data){
+      client.on('received_cmd', async(client, data) => {
         if(data.ns == 'base' &&  data.cmd == 'ping')
           return;
-        data.ns = { sub_client_key : client.client_key , ns : data.ns };
+        data.ns = {sub_client_key : client.client_key, ns : data.ns};
 
-        var response, error;
-        try{
-          var response = yield self._client.send.apply(self._client, [data.ns, data.cmd, data.args].concat(data.xargs || []));
-        }catch(err){
+        var response;
+        var error;
+        try {
+          response = await this._client.send.apply(this._client, [data.ns, data.cmd, data.args].concat(data.xargs || []));
+        } catch(err) {
           error = err;
         }
         return client.respond(data, response, error);
-      })
+      });
     });
 
-    this.on('unregistered_device', function*(client){
-      try{
-        yield self._client.send('base', 'unregister_sub_client', {client_key : client.client_key});       
-      }catch(err){
-        console.log("cant unregister client !" , client.client_key , err)
+    this.on('unregistered_device', async(client) => {
+      try {
+        await this._client.send('base', 'unregister_sub_client', {client_key : client.client_key});
+      } catch(err) {
+        log.error("cant unregister client !", client.client_key, err);
       }
-    })
+    });
 
-    this._client = new Client(options.client)
+    this._client = new Client(options.client);
 
-    this._client.on('before_registration', function(){
-      self._client.options.registration_parameters = {
-        sub_Clients_list  : pluck(self._clientsList, 'registration_parameters'),
+    this._client.on('before_registration', () => {
+      this._client.options.registration_parameters = {
+        sub_Clients_list  : pluck(this._clientsList, 'registration_parameters'),
         type              : 'slave',
-        address           : self.address,
-        port              : self.options.server_port
-      }
-    })
+        address           : this.address,
+        port              : this.options.server_port
+      };
+    });
 
-    co(this._client.start).catch((err) => {console.log(err.stack)});
-    
-    this._client.on('message' , function*(data){
+    this._client.start().catch((err) => log.error(err.stack));
+
+    this._client.on('message', async(data) => {
       if(data.ns == 'base' && data.cmd == 'ping')
-        return
+        return;
       var sub_client_key = data.ns.sub_client_key;
       if(sub_client_key) {
-        self.log.info("proxy %s from %s to %s", data, sub_client_key);
-        var remote = self._clientsList[sub_client_key], response, err;
+        log.info("proxy %s from %s to %s", data, sub_client_key);
+        var remote = this._clientsList[sub_client_key];
+        var response;
+        var error;
         try {
           if(!remote)
-              throw `Bad client '${sub_client_key}'`; //maybe unregist device
-          response = yield remote.send.apply(remote, [data.ns.ns, data.cmd, data.args].concat(data.xargs || []));
-        } catch(error) {
-          err = error;
+            throw `Bad client '${sub_client_key}'`; //maybe unregist device
+          response = await remote.send.apply(remote, [data.ns.ns, data.cmd, data.args].concat(data.xargs || []));
+        } catch(err) {
+          error = err;
         }
-        return self._client.respond(data, response, err);
+        return this._client.respond(data, response, error);
       }
-    })
+    });
+
   }
 
-  connect(){
-    this._client.connect()
+  connect() {
+    this._client.connect();
   }
-  
 
 }
 

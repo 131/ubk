@@ -8,7 +8,6 @@ global.WebSocket = require('ws');
 const ClientWs = require('../client/ws');
 const Server   = require('../server');
 const wsServer = require('ws').Server
-const co       = require('co');
 
 const port = 3000, wsPort = 8001, wsUrl = `http://localhost:${wsPort}/`;
 var server = new Server({server_port:port});
@@ -45,24 +44,21 @@ describe("Basic server/client chat for webSocket", function(){
 
     //very simple RPC design
 
-    client.register_rpc("math", "sum", function* (a, b) {
         //heavy computational operation goes here
-      return Promise.resolve(a + b);
-    });
+    client.register_rpc("math", "sum", (a, b) => a + b);
 
 
-    server.on('base:registered_client', function* (device) {
+    server.on('base:registered_client', async(device) => {
       device = server.get_client(device.client_key);
 
-      var response = yield device.send("math", "sum", 2, 4);
+      var response = await device.send("math", "sum", 2, 4);
       server.off('base:registered_client');
       expect(response).to.be(6);
       device.disconnect();
       done();
     });
 
-     client.connect();
-
+    client.connect();
   })
 
 });

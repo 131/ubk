@@ -6,13 +6,18 @@ const defer   = require('nyks/promise/defer');
 const sleep   = require('nyks/function/sleep');
 
 const debug = require('debug');
-const logPing = debug("ubk:client:ping")
 
-const EVENT_SOMETHING_APPEND = "change_append";
+const EVENT_SOMETHING_APPEND = 'change_append';
 
 const evtmsk = function(ns, cmd, space) {
-  return `_${ns}:${cmd}:${space||''}`;
-}
+  return `_${ns}:${cmd}:${space || ''}`;
+};
+
+const log = {
+  error : debug('ubk:client'),
+  info  : debug('ubk:client'),
+  ping  : debug('ubk:client:ping'),
+};
 
 const EVENT_START_LOOP = guid(); //private
 
@@ -24,32 +29,26 @@ class Client extends Events {
     }, options || {});
     this._call_stack = {},
     this._rpcs       = {},
-    this.log = {
-      error : debug("ubk:client"),
-      info  : debug("ubk:client")
-    };
-    this.register_rpc('base', 'ping', function *(){
-      return Promise.resolve("pong");
-    });
+    this.register_rpc('base', 'ping', () => 'pong');
     this.shouldStop = true;
     this.once(EVENT_START_LOOP, this._run, this);
 
   }
 
-  respond(query, response, error){
+  respond(query, response, error) {
     query.response = response;
     query.error    = error;
     delete query.args;
     try {
       this._transport.write(query);
     } catch(err) {
-      this.log.error("can't write in the socket" , err);
+      log.error("can't write in the socket", err);
     }
   }
 
   send(ns, cmd /*, payload[, xargs..] */) {
-    var xargs = [].slice.call(arguments, 2),
-      args  = xargs.shift();
+    var xargs = [].slice.call(arguments, 2);
+    var args  = xargs.shift();
 
     var promise = defer();
     var quid = guid();
@@ -57,12 +56,12 @@ class Client extends Events {
 
     this._call_stack[quid] = { ns, cmd, promise };
 
-    this.log.info("Write", query);
+    log.info('Write', query);
 
     try {
       this._transport.write(query);
     } catch(err) {
-      this.log.error("can't write in the socket" , err);
+      log.error("can't write in the socket", err);
       promise.reject(err);
     }
     return promise;
@@ -70,81 +69,78 @@ class Client extends Events {
 
 
   register_cmd(ns, cmd, callback, ctx) {
-    this.off( evtmsk(ns, cmd) );
-    this.on( evtmsk(ns, cmd) , callback, ctx);
+    this.off(evtmsk(ns, cmd));
+    this.on(evtmsk(ns, cmd), callback, ctx);
   }
 
 
-  * call(ns, cmd) {
+  async call(ns, cmd) {
     var args = [].slice.call(arguments, 2);
     var proc = this._rpcs[evtmsk(ns, cmd, 'rpc')];
     if(!proc)
       throw "Invalid rpc command";
-    return yield proc.callback.apply(proc.ctx || this, args);
+    return await proc.callback.apply(proc.ctx || this, args);
   }
 
 
   register_rpc(ns, cmd, callback, ctx) {
-    var self = this;
 
     this._rpcs[evtmsk(ns, cmd, 'rpc')] = {callback, ctx};
 
-    this.register_cmd(ns, cmd, function* (client, query) {
-      var response, err;
+    this.register_cmd(ns, cmd, async function(client, query) {
+      var response;
+      var error;
       try {
         var args = [query.args].concat(query.xargs || []);
-        response = yield callback.apply(this, args);
-      } catch(error) { err = ""+ error; }
+        response = await callback.apply(this, args);
+      } catch(err) { error = '' + err; }
 
-      client.respond(query, response, err);
+      client.respond(query, response, error);
     }, ctx);
   }
 
-  * _run () {
-
-    var self = this;
+  async _run () {
 
     if(this._looping)
       throw "Already connected";
 
     this._looping = true;
-    this.log.info("Connecting as %s", this.client_key);
+    log.info("Connecting as %s", this.client_key);
 
     // Directly send register
 
     var wait = defer();
 
     do {
-
       if(this.shouldStop) {
-        yield sleep(200);
+        await sleep(200);
         continue;
       }
 
       try {
 
-        this._transport = yield this.transport();
+        this._transport = await this.transport();
         this._transport.on('message', this._onMessage.bind(this));
-        this._transport.once('error' , function() {
-           wait.reject();
+        this._transport.once('error', function() {
+          wait.reject();
         });
 
         this.connected = true;
 
-        this.emit('before_registration').catch(this.log.error);
+        this.emit('before_registration').catch(log.error);
         var opts = Object.assign({client_key : this.client_key}, this.options.registration_parameters);
         var registerTimeout =  defer();
         setTimeout(registerTimeout.reject, 2000);
-        yield Promise.race([this.send('base', 'register', opts) , registerTimeout]);
-        this.emit('registered').catch(this.log.error);
-        this.emit('connected').catch(this.log.error);
-        this.log.info('Client has been registered');
+        await Promise.race([this.send('base', 'register', opts), registerTimeout]);
+        this.emit('registered').catch(log.error);
+        this.emit('connected').catch(log.error);
+        log.info('Client has been registered');
 
         do {
           wait = defer();
           setTimeout(wait.reject, 10000);
-          var response =  yield Promise.race([this.send('base', 'ping') , wait]);
-          if(response != "pong")
+          var response =  await Promise.race([this.send('base', 'ping'), wait]);
+          if(response != 'pong')
             throw "Invalid ping challenge reponse";
 
           if(this.shouldStop)
@@ -152,12 +148,12 @@ class Client extends Events {
 
           wait = defer();
           setTimeout(wait.resolve, 10000);
-          yield wait;
+          await wait;
         } while(true);
 
       } catch(err) {
         wait.resolve(); //make sure not unHandler promise can trigger
-        this.log.error("" + err)
+        log.error('' + err);
         if(this._transport)
           this._transport.destroy();
 
@@ -165,13 +161,13 @@ class Client extends Events {
 
         if(this.connected) {
           this.connected = false;
-          this.emit('disconnected', err).catch(this.log.error);
+          this.emit('disconnected', err).catch(log.error);
         }
 
         this.connected = false;
         if(this.shouldStop)
           continue; //no need to wait
-        yield sleep(this.options.reconnect_delay);
+        await sleep(this.options.reconnect_delay);
       }
 
 
@@ -181,12 +177,12 @@ class Client extends Events {
   export_json() {
     if(this._transport)
       return this._transport.export_json();
-    return {}
+    return {};
   }
 
 
   connect(host, port) {
-    this.emit(EVENT_START_LOOP).catch(this.log.error)
+    this.emit(EVENT_START_LOOP).catch(log.error);
     this.options.server_hostaddr = host || this.options.server_hostaddr ;
     this.options.server_port     = port || this.options.server_port;
     this.shouldStop = false;
@@ -194,35 +190,35 @@ class Client extends Events {
 
   disconnect() {
     if(this._transport)
-       this._transport.destroy();
+      this._transport.destroy();
 
     this.shouldStop = true;
   }
 
   _onMessage(data) {
 
-    if(( (data.ns == 'base') && (data.cmd == 'ping') ) || (data.response == 'pong') ){
-      logPing("Received", data)
-    }else {
-      this.log.info("Received", data);
+    if(((data.ns == 'base') && (data.cmd == 'ping')) || (data.response == 'pong')) {
+      log.ping("Received", data);
+    } else {
+      log.info("Received", data);
     }
 
     // Local call stack
     var callback = this._call_stack[data.quid];
 
     if(callback) {
-       callback.promise.chain(data.error, data.response);
-      this.emit(EVENT_SOMETHING_APPEND, callback.ns, callback.cmd).catch(this.log.error);
+      callback.promise.chain(data.error, data.response);
+      this.emit(EVENT_SOMETHING_APPEND, callback.ns, callback.cmd).catch(log.error);
       delete this._call_stack[data.quid];
       return;
     }
 
-    this.emit("message", data).catch(this.log.error);
-    this.emit(evtmsk(data.ns, data.cmd), this , data)
-    .then(() => {
-      this.emit(EVENT_SOMETHING_APPEND, data.ns, data.cmd).catch(this.log.error)
-    })
-    .catch(this.log.error);
+    this.emit('message', data).catch(log.error);
+    this.emit(evtmsk(data.ns, data.cmd), this, data)
+      .then(() => {
+        this.emit(EVENT_SOMETHING_APPEND, data.ns, data.cmd).catch(log.error);
+      })
+      .catch(log.error);
   }
 
 }

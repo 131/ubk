@@ -1,14 +1,25 @@
 "use strict";
+
 const net     = require('net');
 const tls     = require('tls');
+const url     = require('url');
+
+const debug = require('debug');
+
 const guid    = require('mout/random/guid');
 const defer   = require('nyks/promise/defer');
-const url     = require('url');
 const TCPTransport = require('./transport');
 const Client = require('../');
 
+const log = {
+  error : debug("ubk:client:tcp"),
+  info  : debug("ubk:client:tcp")
+};
+
 class TCPClient extends Client {
+
   constructor(options, server_hostaddr) {
+
     options = Object.assign({
       server_hostaddr : '127.0.0.1',
       server_port     : 8000,
@@ -18,7 +29,7 @@ class TCPClient extends Client {
     options.server_hostaddr  = server_hostaddr || options.server_hostaddr;
     options.server_hostname  = options.server_hostname || options.server_hostaddr;
     super(options);
-      // Network protocol
+    // Network protocol
 
     this._tls    = {};
 
@@ -27,23 +38,23 @@ class TCPClient extends Client {
 
     if(license) {
       this._tls = {
-          key   : license.private_key,
-          cert  : license.client_certificate,
-          ca    : license.ca
+        key   : license.private_key,
+        cert  : license.client_certificate,
+        ca    : license.ca
       };
     }
   }
 
-  * build_proxy_socket(socket_info){
+  async build_proxy_socket(socket_info) {
     var defered = defer();
     var proxy_url = url.parse(this.options.PROXY);
-    this.log.info(`using proxy ${proxy_url.host}`)
+    log.info(`using proxy ${proxy_url.host}`);
     if(!proxy_url.port || !proxy_url.hostname)
       defered.reject(`Invalid proxy url '${this.options.PROXY}'`);
     var socket = net.createConnection(proxy_url.port, proxy_url.hostname, defered.chain);
     socket.once('error', defered.reject);
 
-    yield defered;
+    await defered;
 
     var handshake = `CONNECT ${socket_info.host}:${socket_info.port} HTTP/1.0\r\n\r\n`;
     socket.write(handshake);
@@ -56,7 +67,7 @@ class TCPClient extends Client {
       var header = "" + data.slice(0, i);
       if(!success.test(header))
         return defered.reject(`Invalid proxy response '${header}'`);
-      this.log.info(`connection to proxy established ${header}`)
+      log.info(`connection to proxy established ${header}`);
       defered.resolve(socket);
     });
     return defered;
@@ -64,17 +75,17 @@ class TCPClient extends Client {
 
 
   // Connect to the server
-  * transport () {
+  async transport () {
     var lnk = {
       host : this.options.server_hostaddr,
       port : this.options.server_port,
     };
     var is_secured    = !!(this._tls.key && this._tls.cert);
 
-    this.log.info(`try to connect to ${lnk.host}:${lnk.port}`);
+    log.info(`try to connect to ${lnk.host}:${lnk.port}`);
 
     if(this.options.PROXY)
-      lnk = {socket : yield this.build_proxy_socket(lnk) };
+      lnk = {socket : await this.build_proxy_socket(lnk) };
 
     if(is_secured) {
       Object.assign(lnk, {
@@ -85,9 +96,9 @@ class TCPClient extends Client {
 
     var connect_method = is_secured ? tls : net;
     var connect = defer();
-    var socket = connect_method.connect(lnk , connect.chain);
+    var socket = connect_method.connect(lnk, connect.chain);
     socket.once('error', connect.chain);
-    yield connect;
+    await connect;
 
     return new TCPTransport(socket);
   }

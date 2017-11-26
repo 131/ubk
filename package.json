@@ -6,8 +6,10 @@
   "scripts": {
     "coveralls": "npm install coveralls && node ./node_modules/coveralls/bin/coveralls.js < ./coverage/lcov.info",
     "discify": "browserify --ignore cnyks --node -p discify index.js | discify-reporter --ir://run --source=disc/graph.json",
-    "mocha": "mocha -r mocha-plugin-co -b",
-    "test": "node node_modules/istanbul/lib/cli.js cover --report text-summary --report html --report lcov  node_modules/mocha/bin/_mocha -- -r mocha-plugin-co"
+    "test": "node node_modules/istanbul/lib/cli.js cover --report text-summary --report html --report lcov  node_modules/mocha/bin/_mocha",
+    "jscs": "jscs --config=node_modules/ivs-jssc/ivs-node.jscsrc server client",
+    "eslint": "eslint --config=node_modules/ivs-jssc/ivs-node.eslintrc.js server client",
+    "checkall" : "npm run eslint && npm run jscs"
   },
   "repository": {
     "type": "git",
@@ -25,20 +27,16 @@
   },
   "homepage": "https://github.com/131/ubk",
   "dependencies": {
-    "async-co": "^1.7.0",
     "debug": "^2.3.0",
-    "eventemitter-co": "^1.0.4",
+    "eventemitter-co": "^1.0.5",
+    "ivs-jssc": "^2.1.1",
     "mout": "^1.0.0",
-    "nyks": "^3.6.2",
-    "uclass": "^2.4.0"
+    "nyks": "^4.1.10"
   },
   "devDependencies": {
-    "async": "^2.0.1",
-    "co": "^4.6.0",
     "expect.js": "^0.3.1",
     "istanbul": "^0.4.5",
     "mocha": "^3.1.2",
-    "mocha-plugin-co": "^1.0.0",
     "ws": "^1.1.0"
   }
 }

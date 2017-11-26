@@ -2,8 +2,6 @@
 
 
 const expect = require('expect.js');
-const async  = require('async');
-const co       = require('co');
 
 const stripStart = require('nyks/string/stripStart');
 const detach   = require('nyks/function/detach');
@@ -20,11 +18,6 @@ const DELIMITER = String.fromCharCode(27);
 var server = new Server({server_port : 0});
 var port   = -1;
 
-function cothrow(generator){
-  co(generator).catch(detach(function(error) {
-    throw error;
-  }));
-}
 
 describe("Raw server/client chat", function(){
 
@@ -34,13 +27,11 @@ describe("Raw server/client chat", function(){
       done();
     });
 
-    server.register_rpc('base', 'crash', function* () {
+    server.register_rpc('base', 'crash', () => {
       throw "This is an error"
     });
 
-    server.register_rpc('base', 'echo', function* (payload){
-      return Promise.resolve(payload);
-    });
+    server.register_rpc('base', 'echo', payload => payload);
 
   });
 
@@ -49,9 +40,7 @@ describe("Raw server/client chat", function(){
 
 
     server.once('base:registered_client', function(device){
-      cothrow(function*(){
-        expect().fail("Should not be here");
-      });
+      expect().fail("Should not be here");
     });
 
     const client = net.connect({port}, () => {
@@ -82,16 +71,14 @@ describe("Raw server/client chat", function(){
     };
 
     client.connect()
-    client.once('connected', function() {
-      cothrow(function*(){
-        try {
-          yield client.send("base", "register", {client_key : "foo" });
-          expect().fail("Should not be connected");
-        } catch(err) {
-            expect(err).to.match(/Already registered client/)
-            next("error");
-        }
-      });
+    client.once('connected', async function() {
+      try {
+        await client.send("base", "register", {client_key : "foo" });
+        expect().fail("Should not be connected");
+      } catch(err) {
+          expect(err).to.match(/Already registered client/)
+          next("error");
+      }
     })
 
     client.once('disconnected', function(){
@@ -105,7 +92,7 @@ describe("Raw server/client chat", function(){
 
 
 
-  it("should reject prevent two clients to use the same client_key", function(done) {
+  it("should reject prevent two clients to use the same client_key", async function(done) {
 
     var clienta = new Client({server_port:port, client_key : "AAA"});
     var clientb = new Client({server_port:port, client_key : "AAA"});
@@ -116,23 +103,21 @@ describe("Raw server/client chat", function(){
 
     clienta.connect();
     clienta.on('connected', function() {
-      cothrow(function*(){
 
-        var response = yield clienta.send("base", "echo", "Hellow");
-        expect(response).to.eql("Hellow");
+      var response = await clienta.send("base", "echo", "Hellow");
+      expect(response).to.eql("Hellow");
 
-          clientb.connect();
-          clientb.on('connected', function(){
-            expect().fail("Should not be connected");
-          })
-          clientb.once('disconnected', function(err){
-            expect(err).to.match(/Client 'AAA' already exists/)
+        clientb.connect();
+        clientb.on('connected', function(){
+          expect().fail("Should not be connected");
+        })
+        clientb.once('disconnected', function(err){
+          expect(err).to.match(/Client 'AAA' already exists/)
 
-            expect(Object.keys(server._clientsList).length).to.be(1); //only clienta
-            clientb.disconnect();
-            done();
-          });
-      });
+          expect(Object.keys(server._clientsList).length).to.be(1); //only clienta
+          clientb.disconnect();
+          done();
+        });
 
     });
 
@@ -150,9 +135,7 @@ describe("Raw server/client chat", function(){
     };
 
     server.once('base:registered_client', function(device){
-      cothrow(function*(){
-        expect().fail("Should not be here");
-      });
+      expect().fail("Should not be here");
     });
 
     const client = net.connect({port}, () => {
@@ -163,11 +146,7 @@ describe("Raw server/client chat", function(){
     });
 
     client.on("data", function(buf) {
-
       expect(JSON.parse(trim(buf.toString(), DELIMITER)) .error).to.eql("No id for client to register");
-
-
-
       next("error");
     });
 

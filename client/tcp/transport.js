@@ -1,22 +1,21 @@
 "use strict";
 
-const once    = require('nyks/function/once');
 const Events  = require('eventemitter-co');
 const debug = require('debug');
 
 const Delimiter = 27;
 
 
+const log = {
+  error : debug("ubk:client:tcp"),
+  info  : debug("ubk:client:tcp")
+};
+
 
 class TCPTransport extends Events {
 
-  constructor(socket){
+  constructor(socket) {
     super();
-
-    this.log = {
-      error : debug("ubk:client:tcp"),
-      info  : debug("ubk:client:tcp")
-    };
 
     this._socket = socket;
     this._buffer = new Buffer(0);
@@ -24,7 +23,7 @@ class TCPTransport extends Events {
     socket.on('data', this.receive.bind(this));
 
     var error = (err) =>  {
-      this.emit('error', err).catch(this.log.error);
+      this.emit('error', err).catch(log.error);
     };
     socket.once('error', error);
     socket.once('end', error);
@@ -44,14 +43,15 @@ class TCPTransport extends Events {
     this._buffer = Buffer.concat([this._buffer, chars]);
 
     while((delimiter_pos = this._buffer.indexOf(Delimiter)) != -1) {
-      var buff = this._buffer.slice(0, delimiter_pos), data;
+      var buff = this._buffer.slice(0, delimiter_pos);
+      var data;
       this._buffer = this._buffer.slice(delimiter_pos + 1);
       try {
-         data = JSON.parse(buff.toString());
+        data = JSON.parse(buff.toString());
       } catch(e) {
-        this.log.error("Parsing response failed: "+e);
+        log.error("Parsing response failed", e);
       }
-      this.emit('message', data).catch(this.log.error);
+      this.emit('message', data).catch(log.error);
     }
   }
 
