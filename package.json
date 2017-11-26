@@ -1,6 +1,6 @@
 {
   "name": "ubk",
-  "version": "4.1.4",
+  "version": "5.0.0",
   "description": "micro message broker",
   "main": "index.js",
   "scripts": {
@@ -10,7 +10,7 @@
     "test": "npm run checkall && npm run cover",
     "jscs": "jscs --config=node_modules/ivs-jssc/ivs-node.jscsrc server client",
     "eslint": "eslint --config=node_modules/ivs-jssc/ivs-node.eslintrc.js server client",
-    "checkall" : "npm run eslint && npm run jscs"
+    "checkall": "npm run eslint && npm run jscs"
   },
   "repository": {
     "type": "git",
@@ -38,7 +38,6 @@
     "expect.js": "^0.3.1",
     "istanbul": "^0.4.5",
     "istanbul-alpha-instrument": "1.1.0-alpha.1",
-
     "mocha": "^3.1.2",
     "ws": "^1.1.0"
   }
