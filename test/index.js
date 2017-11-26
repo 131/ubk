@@ -1,5 +1,5 @@
 "use strict";
-
+/* eslint-env node,mocha */
 
 const expect = require('expect.js');
 
@@ -27,10 +27,10 @@ describe("Basic server/client chat", function() {
     });
 
     server.register_rpc('base', 'crash', () => {
-      throw "This is an error"
+      throw "This is an error";
     });
 
-    server.register_rpc('base', 'crash_with_binding', () => {
+    server.register_rpc('base', 'crash_with_binding', function() { //plz no bind
       throw this.message;
     }, { message : "This is an error" });
 
@@ -49,47 +49,45 @@ describe("Basic server/client chat", function() {
 
   it("should test throw on invalid rpc loopback", async function() {
     try {
-      var data = await server.call("nope", "echo", 22);
+      await server.call("nope", "echo", 22);
       expect.fail("Never here");
     } catch(err){
-        expect(err).to.be("Invalid rpc command");
+      expect(err).to.be("Invalid rpc command");
     }
   });
 
   it("should test simple chat & remote throw", function(done){
-    var client = new Client({server_port:port});
+    var client = new Client({server_port : port});
     console.log("Connecting client");
-    var client = new Client({server_port:port});
 
     client.connect();
 
     client.once('connected', async function() {
-        var hello = await client.send("base", "echo", "Hello");
-        expect(hello).to.eql("Hello");
-        try {
-          await client.send("base", "crash");
-          expect().fail("Should have crash by now")
-        } catch(error){
-          expect(error).to.eql("This is an error");
-        }
+      var hello = await client.send("base", "echo", "Hello");
+      expect(hello).to.eql("Hello");
+      try {
+        await client.send("base", "crash");
+        expect().fail("Should have crash by now");
+      } catch(error){
+        expect(error).to.eql("This is an error");
+      }
+      try {
+        await client.send("base", "crash_with_binding");
+        expect().fail("Should have crash by now");
+      } catch(error){
+        expect(error).to.eql("This is an error");
+      }
+      done();
+    });
 
-        try {
-          await client.send("base", "crash_with_binding");
-          expect().fail("Should have crash by now")
-        } catch(error){
-          expect(error).to.eql("This is an error");
-        }
-        done();
-      })
-
-  })
+  });
 
   it("should test client crash", function(done){
     var client = new Client({server_port:port});
     client.connect();
 
     client.register_rpc("client", "crash", function(){
-      throw "This is an error"
+      throw "This is an error";
     });
 
     server.once('base:registered_client', async function(device) {
@@ -120,11 +118,11 @@ describe("Basic server/client chat", function() {
     server.once('base:registered_client', async function(device){
       device = server.get_client(device.client_key);
 
-        //server should respond a simple ping event
+      //server should respond a simple ping event
       var pong = await client.send('base', 'ping');
       expect(pong).to.eql("pong");
 
-        //all device should respond to a ping event
+      //all device should respond to a ping event
       var pong = await device.send("base", "ping");
       expect(pong).to.eql("pong");
 
@@ -152,14 +150,14 @@ describe("Basic server/client chat", function() {
 
       expect(Object.keys(server._clientsList).length).to.be(currentClients);
 
-        //now waiting for client to figure it as been disconnected
+      //now waiting for client to figure it as been disconnected
       client.once("disconnected", function() {
         expect(client.export_json()).to.eql({});
         done();
-      }));
+      });
     });
 
-  })
+  });
 
 
   it("should support a very simple rpc definition & call", function(done){
@@ -171,7 +169,7 @@ describe("Basic server/client chat", function() {
     client.register_rpc("math", "sum", (a, b) => a+b );
 
 
-    server.on('base:registered_client', (device) => {
+    server.on('base:registered_client', async(device) => {
       //testing direct call
       var response = await client.call("math", "sum", 2, 7);
       expect(response).to.be(9);
@@ -195,11 +193,11 @@ describe("Basic server/client chat", function() {
 
     client.connect();
 
-  })
+  });
 
 
   it("should support multiple clients", function(done) {
-    
+
     var pfx = 'client_', clients = [], connectedClients = 0;
 
     range(0,10).forEach( function(i){
@@ -209,7 +207,7 @@ describe("Basic server/client chat", function() {
         connectedClients ++;
       });
 
-      client.register_rpc("math", "sum", (a, b) {
+      client.register_rpc("math", "sum", (a, b) => {
         var r = a + b + i;
         console.log("doing math in client %s#%s is %s", client.client_key, i, r);
         return r;
@@ -222,7 +220,7 @@ describe("Basic server/client chat", function() {
 
     server.on('base:registered_client', function(device){
       var i = Number(stripStart(device.client_key, pfx)),
-          device = server.get_client(device.client_key);
+        device = server.get_client(device.client_key);
 
       console.log("new device", device.client_key, i);
 
@@ -241,7 +239,7 @@ describe("Basic server/client chat", function() {
       });
     });
 
-    clients.forEach(function(client){ client.connect()});
+    clients.forEach(function(client){ client.connect();});
   });
 
 

@@ -31,7 +31,7 @@ class Server extends Events {
     this._rpcs        = {};
     this._clientHeartBeat = null;
 
-    this.options = {
+    this.options = merge({
       'secured'       : false,
       'server_port'   : 8000,
       'socket_port'   : 8001,
@@ -44,19 +44,15 @@ class Server extends Events {
         'cert' : null,
         'ca' : [null]
       }
-    };
+    }, options);
 
     this.heartbeat = this.heartbeat.bind(this);
-    this.build_tls_server = this.build_tls_server.bind(this);
-    this.build_net_server = this.build_net_server.bind(this);
     this.new_tcp_client = this.new_tcp_client.bind(this);
     this.new_websocket_client = this.new_websocket_client.bind(this);
     this.get_client = this.get_client.bind(this);
     this.register_client = this.register_client.bind(this);
     this.lost_client = this.lost_client.bind(this);
     this.call = this.call.bind(this);
-
-    this.setOptions(options);
 
     if(this.options.secured) {
       this.tcp_server = tls.createServer(this.options.tls_options, this.new_tcp_client);

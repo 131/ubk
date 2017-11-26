@@ -5,6 +5,7 @@ const expect = require('expect.js');
 
 const stripStart = require('nyks/string/stripStart');
 const detach   = require('nyks/function/detach');
+const defer    = require('nyks/promise/defer');
 const range    = require('mout/array/range');
 
 const Server = require('../server');
@@ -92,8 +93,8 @@ describe("Raw server/client chat", function(){
 
 
 
-  it("should reject prevent two clients to use the same client_key", async function(done) {
-
+  it("should reject prevent two clients to use the same client_key", async function() {
+    var defered = defer();
     var clienta = new Client({server_port:port, client_key : "AAA"});
     var clientb = new Client({server_port:port, client_key : "AAA"});
 
@@ -102,25 +103,26 @@ describe("Raw server/client chat", function(){
 
 
     clienta.connect();
-    clienta.on('connected', function() {
+    clienta.on('connected', async() => {
 
       var response = await clienta.send("base", "echo", "Hellow");
       expect(response).to.eql("Hellow");
 
-        clientb.connect();
-        clientb.on('connected', function(){
-          expect().fail("Should not be connected");
-        })
-        clientb.once('disconnected', function(err){
-          expect(err).to.match(/Client 'AAA' already exists/)
+      clientb.connect();
+      clientb.on('connected', function(){
+        expect().fail("Should not be connected");
+      });
 
-          expect(Object.keys(server._clientsList).length).to.be(1); //only clienta
-          clientb.disconnect();
-          done();
-        });
+      clientb.once('disconnected', function(err){
+        expect(err).to.match(/Client 'AAA' already exists/)
 
+        expect(Object.keys(server._clientsList).length).to.be(1); //only clienta
+        clientb.disconnect();
+        defered.resolve();
+      });
     });
 
+    return defered;
   })
 
 
