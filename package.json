@@ -30,7 +30,6 @@
   "dependencies": {
     "debug": "^2.3.0",
     "eventemitter-co": "^1.0.5",
-    "ivs-jssc": "^2.1.1",
     "mout": "^1.0.0",
     "nyks": "^4.1.10"
   },
@@ -38,6 +37,7 @@
     "expect.js": "^0.3.1",
     "istanbul": "^0.4.5",
     "istanbul-alpha-instrument": "1.1.0-alpha.1",
+    "ivs-jssc": "^2.1.2",
     "mocha": "^3.1.2",
     "ws": "^1.1.0"
   }
