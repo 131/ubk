@@ -1,21 +1,20 @@
 "use strict";
 
+const debug   = require('debug');
+const Events  = require('eventemitter-co');
 
 const guid    = require('mout/random/guid');
 const defer   = require('nyks/promise/defer');
-const Events  = require('eventemitter-co');
-const debug   = require('debug');
 
+const SubClient    = require('./subClient');
 const TCPTransport = require('./transport/tcp');
 const WSTransport  = require('./transport/ws');
-const SubClient    = require('./subClient');
 
 const log = {
   info  : debug('ubk:server:client'),
   error : debug('ubk:server:client'),
   ping  : debug('ubk:server:ping')
 };
-
 
 class Client extends Events {
 
@@ -54,27 +53,24 @@ class Client extends Events {
     });
   }
 
-
   // Export client configuration
   export_json() {
     return {
-      client_key    : this.client_key,
+      client_key        : this.client_key,
       registration_time : Math.floor(this.registration_time / 1000),
-      uptime : Math.floor((Date.now() - this.registration_time) / 1000),
-      remoteAddress : this.transport.export_json(),
-      sub_client_list : Object.keys(this._sub_clients)
+      uptime            : Math.floor((Date.now() - this.registration_time) / 1000),
+      remoteAddress     : this.transport.export_json(),
+      sub_client_list   : Object.keys(this._sub_clients)
     };
   }
-
 
   // React to received data
   receive(data) {
     // Debug
-    if(((data.ns == 'base') && (data.cmd == 'ping')) || (data.response == 'pong')) {
+    if(((data.ns == 'base') && (data.cmd == 'ping')) || (data.response == 'pong'))
       log.ping("Received", data, "from client", this.client_key);
-    }else {
+    else
       log.info("Received", data, "from client", this.client_key);
-    }
 
     var callback = this._call_stack[data.quid];
     if(callback) {
@@ -95,8 +91,8 @@ class Client extends Events {
   signal(ns, cmd/*, payload[, xargs..] */) {
     var xargs = [].slice.call(arguments, 2);
     var args  = xargs.shift();
-
     var query = {ns, cmd, args, xargs};
+
     try {
       this.write(query);
     } catch(err) {
@@ -104,14 +100,13 @@ class Client extends Events {
     }
   }
 
-
   send(ns, cmd/*, payload[, xargs..] */) {
     var xargs = [].slice.call(arguments, 2);
     var args  = xargs.shift();
 
     var promise = defer();
-    var quid = guid();
-    var query = {ns, cmd, quid, args, xargs };
+    var quid    = guid();
+    var query   = {ns, cmd, quid, args, xargs };
 
     this._call_stack[quid] = { ns, cmd, promise };
 
@@ -128,7 +123,6 @@ class Client extends Events {
     return promise;
   }
 
-
   // Low Level send raw JSON
   respond(query, response, error) {
     if(!(query.ns == 'base' && query.cmd == 'ping'))
@@ -141,6 +135,7 @@ class Client extends Events {
     delete query.ns;
     delete query.xargs;
     delete query.args;
+
     try {
       this.write(query);
     } catch(err) {
@@ -174,7 +169,5 @@ class Client extends Events {
     delete this._sub_clients[client_key];
   }
 }
-
-
 
 module.exports = Client;

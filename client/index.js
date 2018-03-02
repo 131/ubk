@@ -1,11 +1,12 @@
 "use strict";
 
-const guid    = require('mout/random/guid');
+const debug   = require('debug');
 const Events  = require('eventemitter-co');
+
+const guid    = require('mout/random/guid');
 const defer   = require('nyks/promise/defer');
 const sleep   = require('nyks/function/sleep');
 
-const debug = require('debug');
 
 const EVENT_SOMETHING_APPEND = 'change_append';
 
@@ -22,17 +23,19 @@ const log = {
 const EVENT_START_LOOP = guid(); //private
 
 class Client extends Events {
+
   constructor(options) {
     super();
+
     this.options     = Object.assign({
       reconnect_delay : 2 * 1000,
     }, options || {});
+
     this._call_stack = {},
     this._rpcs       = {},
     this.register_rpc('base', 'ping', () => 'pong');
     this.shouldStop = true;
     this.once(EVENT_START_LOOP, this._run, this);
-
   }
 
   respond(query, response, error) {
@@ -51,8 +54,8 @@ class Client extends Events {
     var args  = xargs.shift();
 
     var promise = defer();
-    var quid = guid();
-    var query = { ns, cmd, quid, args, xargs};
+    var quid    = guid();
+    var query   = { ns, cmd, quid, args, xargs};
 
     this._call_stack[quid] = { ns, cmd, promise };
 
@@ -67,12 +70,10 @@ class Client extends Events {
     return promise;
   }
 
-
   register_cmd(ns, cmd, callback, ctx) {
     this.off(evtmsk(ns, cmd));
     this.on(evtmsk(ns, cmd), callback, ctx);
   }
-
 
   async call(ns, cmd) {
     var args = [].slice.call(arguments, 2);
@@ -81,7 +82,6 @@ class Client extends Events {
       throw "Invalid rpc command";
     return await proc.callback.apply(proc.ctx || this, args);
   }
-
 
   register_rpc(ns, cmd, callback, ctx) {
 
@@ -99,7 +99,7 @@ class Client extends Events {
     }, ctx);
   }
 
-  async _run () {
+  async _run() {
 
     if(this._looping)
       throw "Already connected";
@@ -108,7 +108,6 @@ class Client extends Events {
     log.info("Connecting as %s", this.client_key);
 
     // Directly send register
-
     var wait = defer();
 
     do {
@@ -170,7 +169,6 @@ class Client extends Events {
         await sleep(this.options.reconnect_delay);
       }
 
-
     } while(true);
   }
 
@@ -183,7 +181,7 @@ class Client extends Events {
 
   connect(host, port) {
     this.emit(EVENT_START_LOOP).catch(log.error);
-    this.options.server_hostaddr = host || this.options.server_hostaddr ;
+    this.options.server_hostaddr = host || this.options.server_hostaddr;
     this.options.server_port     = port || this.options.server_port;
     this.shouldStop = false;
   }
@@ -197,11 +195,10 @@ class Client extends Events {
 
   _onMessage(data) {
 
-    if(((data.ns == 'base') && (data.cmd == 'ping')) || (data.response == 'pong')) {
+    if(((data.ns == 'base') && (data.cmd == 'ping')) || (data.response == 'pong'))
       log.ping("Received", data);
-    } else {
+    else
       log.info("Received", data);
-    }
 
     // Local call stack
     var callback = this._call_stack[data.quid];
@@ -222,7 +219,5 @@ class Client extends Events {
   }
 
 }
-
-
 
 module.exports = Client;

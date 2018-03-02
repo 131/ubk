@@ -8,7 +8,6 @@ const log = {
   error : debug('ubk:server:client:ws'),
 };
 
-
 class WSTransport extends Events {
 
   constructor(stream) {
@@ -50,6 +49,7 @@ class WSTransport extends Events {
 
     if(!this._stream)
       return;
+
     this._stream.removeAllListeners('message');
     this._stream.close();
     this._stream = null;

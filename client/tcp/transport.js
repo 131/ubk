@@ -1,16 +1,14 @@
 "use strict";
 
-const Events  = require('eventemitter-co');
-const debug = require('debug');
+const Events = require('eventemitter-co');
+const debug  = require('debug');
 
 const Delimiter = 27;
-
 
 const log = {
   error : debug("ubk:client:tcp"),
   info  : debug("ubk:client:tcp")
 };
-
 
 class TCPTransport extends Events {
 
@@ -28,7 +26,6 @@ class TCPTransport extends Events {
     socket.once('error', error);
     socket.once('end', error);
     socket.once('close', error);
-
   }
 
   // Low level method to send JSON data

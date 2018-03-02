@@ -1,16 +1,16 @@
 'use strict';
 
 const debug  = require('debug');
+
 const pluck  = require('mout/object/pluck');
 
-const Server = require('./index');
 const Client = require('../client/tcp');
+const Server = require('./index');
 
 const log = {
   info  : debug('ubk:server:ProxyServer'),
   error : debug('ubk:server:ProxyServer')
 };
-
 
 class ProxyServer extends Server {
 
@@ -34,7 +34,7 @@ class ProxyServer extends Server {
       client.registration_parameters = args; //save registration args
       client.registration_parameters.export_json = client.export_json();
 
-      client.on('received_cmd', async(client, data) => {
+      client.on('received_cmd', async (client, data) => {
         if(data.ns == 'base' &&  data.cmd == 'ping')
           return;
         data.ns = {sub_client_key : client.client_key, ns : data.ns};
@@ -50,7 +50,7 @@ class ProxyServer extends Server {
       });
     });
 
-    this.on('unregistered_device', async(client) => {
+    this.on('unregistered_device', async (client) => {
       try {
         await this._client.send('base', 'unregister_sub_client', {client_key : client.client_key});
       } catch(err) {
@@ -62,16 +62,16 @@ class ProxyServer extends Server {
 
     this._client.on('before_registration', () => {
       this._client.options.registration_parameters = {
-        sub_Clients_list  : pluck(this._clientsList, 'registration_parameters'),
-        type              : 'slave',
-        address           : this.address,
-        port              : this.options.server_port
+        sub_Clients_list : pluck(this._clientsList, 'registration_parameters'),
+        type             : 'slave',
+        address          : this.address,
+        port             : this.options.server_port
       };
     });
 
     this._client.start().catch((err) => log.error(err.stack));
 
-    this._client.on('message', async(data) => {
+    this._client.on('message', async (data) => {
       if(data.ns == 'base' && data.cmd == 'ping')
         return;
       var sub_client_key = data.ns.sub_client_key;
@@ -90,7 +90,6 @@ class ProxyServer extends Server {
         return this._client.respond(data, response, error);
       }
     });
-
   }
 
   connect() {

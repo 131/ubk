@@ -1,15 +1,15 @@
 "use strict";
 
-const tls   = require('tls');
-const net   = require('net');
-const debug = require('debug');
+const debug  = require('debug');
+const Events = require('eventemitter-co');
+const net    = require('net');
+const tls    = require('tls');
 
+const forIn  = require('mout/object/forIn');
+const merge  = require('mout/object/merge');
+const defer  = require('nyks/promise/defer');
 
-const Client  = require('./client.js');
-const merge   = require('mout/object/merge');
-const forIn   = require('mout/object/forIn');
-const Events  = require('eventemitter-co');
-const defer      = require('nyks/promise/defer');
+const Client = require('./client.js');
 
 const EVENT_SOMETHING_APPEND = 'change_append';
 
@@ -17,7 +17,6 @@ const log = {
   info  : debug('ubk:server'),
   error : debug('ubk:server'),
 };
-
 
 const evtmsk = function(ns, cmd) {
   return `_${ns}:${cmd}`;
@@ -27,44 +26,43 @@ class Server extends Events {
 
   constructor(options) {
     super();
-    this._clientsList = {};
-    this._rpcs        = {};
+    this._clientsList     = {};
+    this._rpcs            = {};
     this._clientHeartBeat = null;
 
     this.options = merge({
-      'secured'       : false,
-      'server_port'   : 8000,
-      'socket_port'   : 8001,
-      'heartbeat_interval' : 1000 * 20,
-      'broadcasting_registration'  : true,
-      'tls_options' : {
-        'requestCert' : true,
-        'rejectUnauthorized' : true,
-        'key' :  null,
-        'cert' : null,
-        'ca' : [null]
+      secured       : false,
+      server_port   : 8000,
+      socket_port   : 8001,
+      heartbeat_interval : 1000 * 20,
+      broadcasting_registration : true,
+      tls_options : {
+        requestCert : true,
+        rejectUnauthorized : true,
+        key  :  null,
+        cert : null,
+        ca   : [null]
       }
     }, options);
 
-    this.heartbeat = this.heartbeat.bind(this);
-    this.new_tcp_client = this.new_tcp_client.bind(this);
+    this.heartbeat            = this.heartbeat.bind(this);
+    this.new_tcp_client       = this.new_tcp_client.bind(this);
     this.new_websocket_client = this.new_websocket_client.bind(this);
-    this.get_client = this.get_client.bind(this);
-    this.register_client = this.register_client.bind(this);
-    this.lost_client = this.lost_client.bind(this);
-    this.call = this.call.bind(this);
+    this.get_client           = this.get_client.bind(this);
+    this.register_client      = this.register_client.bind(this);
+    this.lost_client          = this.lost_client.bind(this);
+    this.call                 = this.call.bind(this);
 
-    if(this.options.secured) {
+    if(this.options.secured)
       this.tcp_server = tls.createServer(this.options.tls_options, this.new_tcp_client);
-    } else {
+    else
       this.tcp_server = net.createServer(this.new_tcp_client);
-    }
 
     //... what else ?
     this.register_rpc('base', 'ping', () => 'pong');
     this.register_cmd('base', 'register', this.register_client);
 
-    this.register_cmd('base', 'register_sub_client', async(client, query) => {
+    this.register_cmd('base', 'register_sub_client', async (client, query) => {
       var sub_client_registrationargs = query.args;
       var error;
       var response;
@@ -77,7 +75,7 @@ class Server extends Events {
       client.respond(query, response, error);
     });
 
-    this.register_cmd('base', 'unregister_sub_client', async(client, query) => {
+    this.register_cmd('base', 'unregister_sub_client', async (client, query) => {
       var sub_client_key    = query.args.client_key;
       var error;
       var response;
@@ -94,11 +92,13 @@ class Server extends Events {
   async register_sub_client(client, sub_client_registrationargs) {
     var sub_client_key    = sub_client_registrationargs.client_key;
     var client_capability = sub_client_registrationargs.client_capability;
-    var all_sub_client = this.get_all_sub_client();
+    var all_sub_client    = this.get_all_sub_client();
+
     if(all_sub_client[sub_client_key])
       throw `Client '${sub_client_key}' already exists, sorry`;
     var validated_data = await this.validate_sub_client(sub_client_key, client_capability);
-    var sub_client = client.add_sub_client(sub_client_key);
+    var sub_client     = client.add_sub_client(sub_client_key);
+
     sub_client.export_json = () => {
       var status     = sub_client_registrationargs.export_json;
       status.uptime  = Math.floor((Date.now() / 1000 - status.registration_time));
@@ -125,17 +125,17 @@ class Server extends Events {
 
   get_all_sub_client() {
     var all_sub_client = {};
-    forIn(this._clientsList, (client) => {
+    forIn (this._clientsList, (client) => {
       all_sub_client = merge(all_sub_client, client._sub_clients);
     });
     return all_sub_client;
   }
 
   start() { /*chain*/
-    var args = [].slice.apply(arguments);
+    var args  = [].slice.apply(arguments);
     var chain = args.shift() || Function.prototype;
 
-    var defered = defer();
+    var defered     = defer();
     var server_port = this.options.server_port;
 
     this._clientHeartBeat = setInterval(this.heartbeat,  this.options.heartbeat_interval);
@@ -153,8 +153,7 @@ class Server extends Events {
   }
 
   heartbeat() {
-
-    forIn(this._clientsList, (client) => {
+    forIn (this._clientsList, (client) => {
       // Check failures
       if(client.ping_failure) {
         log.info("client %s failed ping challenge, assume disconnected", client.client_key);
@@ -163,12 +162,11 @@ class Server extends Events {
 
       // Send ping
       client.ping_failure = true;
-      client.send('base', 'ping').then(function(response) {
+      client.send('base', 'ping').then(function (response) {
         client.ping_failure = !(response == 'pong');
       });
     });
   }
-
 
   // Build new client from tcp stream
   new_tcp_client(stream) {
@@ -183,7 +181,6 @@ class Server extends Events {
     var client = new Client('ws', stream);
     client.once('received_cmd', this.register_client);
   }
-
 
   async register_client(client, query) {
     try {
@@ -241,7 +238,7 @@ class Server extends Events {
     // Remove from list
     log.info("Lost client", client.client_key);
 
-    forIn(client._sub_clients, (sub_client) => {
+    forIn (client._sub_clients, (sub_client) => {
       try {
         this.unregister_sub_client(client, sub_client.client_key);
       } catch(err) {
@@ -260,12 +257,10 @@ class Server extends Events {
     this.off(evtmsk(ns, cmd));
   }
 
-
   register_cmd(ns, cmd, callback, ctx) {
     this.off(evtmsk(ns, cmd));
     this.on(evtmsk(ns, cmd), callback, ctx);
   }
-
 
   async call(ns, cmd) {
     var args = [].slice.call(arguments, 2);
@@ -325,8 +320,7 @@ class Server extends Events {
       .catch(log.error);
   }
 
-
-  broadcast (ns, cmd, payload) {
+  broadcast(ns, cmd, payload) {
     var args = arguments;
     log.info("BROADCASTING", ns, cmd);
 

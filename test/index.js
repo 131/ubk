@@ -3,25 +3,21 @@
 
 const expect = require('expect.js');
 
+const range      = require('mout/array/range');
+const sleep      = require('nyks/function/sleep');
 const stripStart = require('nyks/string/stripStart');
-const range    = require('mout/array/range');
-const sleep    = require('nyks/function/sleep');
 
 const Server = require('../server');
 const Client = require('../client/tcp');
 
-
-
 var server = new Server({server_port : 0});
 var port   = -1;
 
-
-
 describe("Basic server/client chat", function() {
   this.timeout(20 * 1000); // usefull with debug
-  
-  it("must start the server", function(done){
-    server.start(function(){
+
+  it("must start the server", function(done) {
+    server.start(function() {
       port = server.options.server_port;
       done();
     });
@@ -34,29 +30,28 @@ describe("Basic server/client chat", function() {
       throw this.message;
     }, { message : "This is an error" });
 
-    server.register_rpc('base', 'echo', async(payload) => {
+    server.register_rpc('base', 'echo', async (payload) => {
       await sleep(10);
       return payload;
     });
 
   });
 
-  it("should test local rpc loopback", async()  => {
+  it("should test local rpc loopback", async () => {
     var data = await server.call("base", "echo", 22);
     expect(data).to.eql(22);
   });
-
 
   it("should test throw on invalid rpc loopback", async function() {
     try {
       await server.call("nope", "echo", 22);
       expect.fail("Never here");
-    } catch(err){
+    } catch(err) {
       expect(err).to.be("Invalid rpc command");
     }
   });
 
-  it("should test simple chat & remote throw", function(done){
+  it("should test simple chat & remote throw", function(done) {
     var client = new Client({server_port : port});
     console.log("Connecting client");
 
@@ -68,13 +63,13 @@ describe("Basic server/client chat", function() {
       try {
         await client.send("base", "crash");
         expect().fail("Should have crash by now");
-      } catch(error){
+      } catch(error) {
         expect(error).to.eql("This is an error");
       }
       try {
         await client.send("base", "crash_with_binding");
         expect().fail("Should have crash by now");
-      } catch(error){
+      } catch(error) {
         expect(error).to.eql("This is an error");
       }
       done();
@@ -82,18 +77,18 @@ describe("Basic server/client chat", function() {
 
   });
 
-  it("should test client crash", function(done){
-    var client = new Client({server_port:port});
+  it("should test client crash", function(done) {
+    var client = new Client({server_port : port});
     client.connect();
 
-    client.register_rpc("client", "crash", function(){
+    client.register_rpc("client", "crash", function() {
       throw "This is an error";
     });
 
     server.once('base:registered_client', async function(device) {
       device = server.get_client(device.client_key);
       try {
-        var response = await device.send("client", "crash");
+        await device.send("client", "crash");
         throw "Never here";
       } catch(err) {
         expect(err).to.eql("This is an error");
@@ -103,10 +98,9 @@ describe("Basic server/client chat", function() {
     });
   });
 
-
-  it("should allow client to connect", function(done){
+  it("should allow client to connect", function(done) {
     var currentClients = Object.keys(server._clientsList).length;
-    var client = new Client({server_port:port});
+    var client         = new Client({server_port : port});
 
     client.connect();
 
@@ -115,7 +109,7 @@ describe("Basic server/client chat", function() {
       network_challenge = client.export_json();
     });
 
-    server.once('base:registered_client', async function(device){
+    server.once('base:registered_client', async function(device) {
       device = server.get_client(device.client_key);
 
       //server should respond a simple ping event
@@ -123,7 +117,7 @@ describe("Basic server/client chat", function() {
       expect(pong).to.eql("pong");
 
       //all device should respond to a ping event
-      var pong = await device.send("base", "ping");
+      pong = await device.send("base", "ping");
       expect(pong).to.eql("pong");
 
       var remote_network = device.export_json();
@@ -133,14 +127,14 @@ describe("Basic server/client chat", function() {
       expect(lnkPort).to.be.ok();
 
       expect(network_challenge).to.eql({
-        "address": "127.0.0.1",
-        "network": {
-          "address": "127.0.0.1",
-          "family": "IPv4",
-          "port": lnkPort,
+        address : "127.0.0.1",
+        network : {
+          address : "127.0.0.1",
+          family  : "IPv4",
+          port    : lnkPort
         },
-        "port": port,
-        "type": "tcp",
+        port : port,
+        type : "tcp"
       });
 
       expect(Object.keys(server._clientsList).length).to.be(currentClients + 1);
@@ -156,20 +150,16 @@ describe("Basic server/client chat", function() {
         done();
       });
     });
-
   });
 
-
-  it("should support a very simple rpc definition & call", function(done){
-    var client = new Client({server_port:port});
-
+  it("should support a very simple rpc definition & call", function(done) {
+    var client = new Client({server_port : port});
 
     //very simple RPC design
     //heavy computational operation goes here
-    client.register_rpc("math", "sum", (a, b) => a+b );
+    client.register_rpc("math", "sum", (a, b) => a + b);
 
-
-    server.on('base:registered_client', async(device) => {
+    server.on('base:registered_client', async (device) => {
       //testing direct call
       var response = await client.call("math", "sum", 2, 7);
       expect(response).to.be(9);
@@ -181,10 +171,9 @@ describe("Basic server/client chat", function() {
         expect(err).to.be("Invalid rpc command");
       }
 
-
       device = server.get_client(device.client_key);
 
-      var response = await device.send("math", "sum", 2, 4);
+      response = await device.send("math", "sum", 2, 4);
       server.off('base:registered_client');
       expect(response).to.be(6);
       device.disconnect();
@@ -195,16 +184,17 @@ describe("Basic server/client chat", function() {
 
   });
 
-
   it("should support multiple clients", function(done) {
 
-    var pfx = 'client_', clients = [], connectedClients = 0;
+    var pfx              = 'client_';
+    var clients          = [];
+    var connectedClients = 0;
 
-    range(0,10).forEach( function(i){
-      var client = new Client({server_port:port, client_key:pfx + i});
+    range(0, 10).forEach(function(i) {
+      var client = new Client({server_port : port, client_key : pfx + i});
 
-      client.once("registered", function(){
-        connectedClients ++;
+      client.once("registered", function() {
+        connectedClients++;
       });
 
       client.register_rpc("math", "sum", (a, b) => {
@@ -218,34 +208,29 @@ describe("Basic server/client chat", function() {
 
     var checks = {};
 
-    server.on('base:registered_client', function(device){
-      var i = Number(stripStart(device.client_key, pfx)),
-        device = server.get_client(device.client_key);
+    server.on('base:registered_client', function(device) {
+      var i      = Number(stripStart(device.client_key, pfx));
+
+      device = server.get_client(device.client_key);
 
       console.log("new device", device.client_key, i);
 
-      device.send("math", "sum", 2, 4).then(function(response){
+      device.send("math", "sum", 2, 4).then(function(response) {
 
         expect(response).to.be(6 + i);
         checks[i] = true;
         device.disconnect();
 
-        if(Object.keys(checks).length == clients.length){
+        if(Object.keys(checks).length == clients.length) {
           server.off('base:registered_client');
-          console.log({connectedClients, clients: clients.length});
+          console.log({connectedClients, clients : clients.length});
           expect(connectedClients).to.eql(clients.length);
           done();
         }
       });
     });
 
-    clients.forEach(function(client){ client.connect();});
+    clients.forEach(function(client) { client.connect(); });
   });
 
-
-
 });
-
-
-
-

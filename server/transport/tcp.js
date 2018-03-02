@@ -14,7 +14,6 @@ const DELIMITER = 27;
 
 class TCPTransport extends Events {
 
-
   constructor(stream) {
     super();
 
@@ -40,15 +39,13 @@ class TCPTransport extends Events {
 
     // Load client cert when secured
     if(this._stream.encrypted != null) {
-      var cert       = this._stream.getPeerCertificate();
-      this.client_key  = cert.subject.CN;
-      this.secured   = true;
+      var cert        = this._stream.getPeerCertificate();
+      this.client_key = cert.subject.CN;
+      this.secured    = true;
       log.info("Connected using SSL cert " + this.client_key);
-    } else {
-      this.client_key  = guid();
-    }
+    } else
+      this.client_key = guid();
   }
-
 
   // Received some data
   // * add to buffer
@@ -73,13 +70,11 @@ class TCPTransport extends Events {
         continue;
       }
 
-
       // Send to client
       if(data)
         this.emit("transport_message", data).catch(log.error);
     }
   }
-
 
   export_json() {
     if(!this._stream) //disconnected
