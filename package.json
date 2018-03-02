@@ -35,7 +35,7 @@
     "expect.js": "^0.3.1",
     "istanbul": "^0.4.5",
     "istanbul-alpha-instrument": "1.1.0-alpha.1",
-    "eslint-plugin-ivs": "^1.0.2",
+    "eslint-plugin-ivs": "^1.0.3",
     "mocha": "^3.1.2",
     "ws": "^1.1.0"
   }

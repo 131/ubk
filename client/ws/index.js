@@ -17,7 +17,7 @@ class WSClient extends Client {
     this.url         = '';
     this._socket     = null;
     this.client_key  = null;
-    this.url         = url.replace('http','ws') ;
+    this.url         = url.replace('http', 'ws');
     this.client_key  = guid();
   }
 

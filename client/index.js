@@ -181,7 +181,7 @@ class Client extends Events {
 
   connect(host, port) {
     this.emit(EVENT_START_LOOP).catch(log.error);
-    this.options.server_hostaddr = host || this.options.server_hostaddr ;
+    this.options.server_hostaddr = host || this.options.server_hostaddr;
     this.options.server_port     = port || this.options.server_port;
     this.shouldStop = false;
   }

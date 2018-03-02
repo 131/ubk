@@ -190,7 +190,7 @@ describe("Basic server/client chat", function() {
     var clients          = [];
     var connectedClients = 0;
 
-    range(0,10).forEach(function(i) {
+    range(0, 10).forEach(function(i) {
       var client = new Client({server_port : port, client_key : pfx + i});
 
       client.once("registered", function() {
