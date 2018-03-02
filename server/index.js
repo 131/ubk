@@ -1,15 +1,15 @@
 "use strict";
 
-const tls   = require('tls');
-const net   = require('net');
-const debug = require('debug');
+const debug  = require('debug');
+const Events = require('eventemitter-co');
+const net    = require('net');
+const tls    = require('tls');
 
+const forIn  = require('mout/object/forIn');
+const merge  = require('mout/object/merge');
+const defer  = require('nyks/promise/defer');
 
-const Client  = require('./client.js');
-const merge   = require('mout/object/merge');
-const forIn   = require('mout/object/forIn');
-const Events  = require('eventemitter-co');
-const defer      = require('nyks/promise/defer');
+const Client = require('./client.js');
 
 const EVENT_SOMETHING_APPEND = 'change_append';
 
@@ -17,7 +17,6 @@ const log = {
   info  : debug('ubk:server'),
   error : debug('ubk:server'),
 };
-
 
 const evtmsk = function(ns, cmd) {
   return `_${ns}:${cmd}`;
@@ -27,63 +26,62 @@ class Server extends Events {
 
   constructor(options) {
     super();
-    this._clientsList = {};
-    this._rpcs        = {};
+    this._clientsList     = {};
+    this._rpcs            = {};
     this._clientHeartBeat = null;
 
     this.options = merge({
-      'secured'       : false,
-      'server_port'   : 8000,
-      'socket_port'   : 8001,
-      'heartbeat_interval' : 1000 * 20,
-      'broadcasting_registration'  : true,
-      'tls_options' : {
-        'requestCert' : true,
-        'rejectUnauthorized' : true,
-        'key' :  null,
-        'cert' : null,
-        'ca' : [null]
+      secured       : false,
+      server_port   : 8000,
+      socket_port   : 8001,
+      heartbeat_interval : 1000 * 20,
+      broadcasting_registration : true,
+      tls_options : {
+        requestCert : true,
+        rejectUnauthorized : true,
+        key  :  null,
+        cert : null,
+        ca   : [null]
       }
     }, options);
 
-    this.heartbeat = this.heartbeat.bind(this);
-    this.new_tcp_client = this.new_tcp_client.bind(this);
+    this.heartbeat            = this.heartbeat.bind(this);
+    this.new_tcp_client       = this.new_tcp_client.bind(this);
     this.new_websocket_client = this.new_websocket_client.bind(this);
-    this.get_client = this.get_client.bind(this);
-    this.register_client = this.register_client.bind(this);
-    this.lost_client = this.lost_client.bind(this);
-    this.call = this.call.bind(this);
+    this.get_client           = this.get_client.bind(this);
+    this.register_client      = this.register_client.bind(this);
+    this.lost_client          = this.lost_client.bind(this);
+    this.call                 = this.call.bind(this);
 
-    if(this.options.secured) {
+    if (this.options.secured)
       this.tcp_server = tls.createServer(this.options.tls_options, this.new_tcp_client);
-    } else {
+    else
       this.tcp_server = net.createServer(this.new_tcp_client);
-    }
 
     //... what else ?
     this.register_rpc('base', 'ping', () => 'pong');
     this.register_cmd('base', 'register', this.register_client);
 
-    this.register_cmd('base', 'register_sub_client', async(client, query) => {
+    this.register_cmd('base', 'register_sub_client', async (client, query) => {
       var sub_client_registrationargs = query.args;
       var error;
       var response;
       try {
         await this.register_sub_client(client, sub_client_registrationargs);
-      } catch(err) {
+      } catch (err) {
         log.error(err);
         error = err;
       }
       client.respond(query, response, error);
     });
 
-    this.register_cmd('base', 'unregister_sub_client', async(client, query) => {
+    this.register_cmd('base', 'unregister_sub_client', async (client, query) => {
       var sub_client_key    = query.args.client_key;
       var error;
       var response;
       try {
         this.unregister_sub_client(client, sub_client_key);
-      } catch(err) {
+      } catch (err) {
         log.error(err);
         error = err;
       }
@@ -94,11 +92,13 @@ class Server extends Events {
   async register_sub_client(client, sub_client_registrationargs) {
     var sub_client_key    = sub_client_registrationargs.client_key;
     var client_capability = sub_client_registrationargs.client_capability;
-    var all_sub_client = this.get_all_sub_client();
-    if(all_sub_client[sub_client_key])
+    var all_sub_client    = this.get_all_sub_client();
+
+    if (all_sub_client[sub_client_key])
       throw `Client '${sub_client_key}' already exists, sorry`;
     var validated_data = await this.validate_sub_client(sub_client_key, client_capability);
-    var sub_client = client.add_sub_client(sub_client_key);
+    var sub_client     = client.add_sub_client(sub_client_key);
+
     sub_client.export_json = () => {
       var status     = sub_client_registrationargs.export_json;
       status.uptime  = Math.floor((Date.now() / 1000 - status.registration_time));
@@ -109,7 +109,7 @@ class Server extends Events {
 
   unregister_sub_client(client, sub_client_key) {
     var sub_client = client._sub_clients[sub_client_key];
-    if(!sub_client)
+    if (!sub_client)
       throw `Client '${sub_client_key}' already unregistred`;
     client.remove_sub_client(sub_client.client_key);
     this.emit('unregister_sub_client', sub_client).catch(log.error);
@@ -125,17 +125,17 @@ class Server extends Events {
 
   get_all_sub_client() {
     var all_sub_client = {};
-    forIn(this._clientsList, (client) => {
+    forIn (this._clientsList, (client) => {
       all_sub_client = merge(all_sub_client, client._sub_clients);
     });
     return all_sub_client;
   }
 
   start() { /*chain*/
-    var args = [].slice.apply(arguments);
+    var args  = [].slice.apply(arguments);
     var chain = args.shift() || Function.prototype;
 
-    var defered = defer();
+    var defered     = defer();
     var server_port = this.options.server_port;
 
     this._clientHeartBeat = setInterval(this.heartbeat,  this.options.heartbeat_interval);
@@ -153,22 +153,20 @@ class Server extends Events {
   }
 
   heartbeat() {
-
-    forIn(this._clientsList, (client) => {
+    forIn (this._clientsList, (client) => {
       // Check failures
-      if(client.ping_failure) {
+      if (client.ping_failure) {
         log.info("client %s failed ping challenge, assume disconnected", client.client_key);
         return client.disconnect();
       }
 
       // Send ping
       client.ping_failure = true;
-      client.send('base', 'ping').then(function(response) {
+      client.send('base', 'ping').then(function (response) {
         client.ping_failure = !(response == 'pong');
       });
     });
   }
-
 
   // Build new client from tcp stream
   new_tcp_client(stream) {
@@ -184,40 +182,39 @@ class Server extends Events {
     client.once('received_cmd', this.register_client);
   }
 
-
   async register_client(client, query) {
     try {
       var args = query.args;
       //can only register once...
-      if(query.ns != 'base' || query.cmd != 'register')
+      if (query.ns != 'base' || query.cmd != 'register')
         throw `Un-expected registration query`;
 
-      if(client.client_key)
+      if (client.client_key)
         throw `Already registered client '${client.client_key}'`;
 
       client.client_key = args.client_key;
       // Check SSL client cert matches
       var exp = client.export_json();
 
-      if(exp.secured && exp.name != client.client_key)
+      if (exp.secured && exp.name != client.client_key)
         throw `The cert '${exp.name}' does NOT match the given id '${client.client_key}'`;
 
-      if(!client.client_key)
+      if (!client.client_key)
         throw `No id for client to register`;
 
       // Avoid conflicts
-      if(this._clientsList[client.client_key])
+      if (this._clientsList[client.client_key])
         throw `Client '${client.client_key}' already exists, sorry`;
 
       try {
-        for(var sub in args.sub_Clients_list || [])
+        for (var sub in args.sub_Clients_list || [])
           await this.register_sub_client(client, sub);
-      } catch(error) {
+      } catch (error) {
         log.error('cant register subClient', error);
       }
 
-    } catch(err) {
-      if(typeof query == 'object')
+    } catch (err) {
+      if (typeof query == 'object')
         client.respond(query, null, err);
       return client.disconnect();
     }
@@ -232,7 +229,7 @@ class Server extends Events {
     // THAT'S GREAT, LET'S NOTIFY EVERYBOOOOODYYYY
     client.emit('registered', args).catch(log.error);
     this.emit('registered_device', client, args).catch(log.error);
-    if(this.options.broadcasting_registration)
+    if (this.options.broadcasting_registration)
       this.broadcast('base', 'registered_client', client.export_json());
   }
 
@@ -241,10 +238,10 @@ class Server extends Events {
     // Remove from list
     log.info("Lost client", client.client_key);
 
-    forIn(client._sub_clients, (sub_client) => {
+    forIn (client._sub_clients, (sub_client) => {
       try {
         this.unregister_sub_client(client, sub_client.client_key);
-      } catch(err) {
+      } catch (err) {
         log.error(err);
       }
     });
@@ -252,7 +249,7 @@ class Server extends Events {
     delete this._clientsList[client.client_key];
 
     this.emit('unregistered_device', client).catch(log.error);
-    if(this.options.broadcasting_registration)
+    if (this.options.broadcasting_registration)
       this.broadcast('base', 'unregistered_client', {client_key : client.client_key });
   }
 
@@ -260,17 +257,15 @@ class Server extends Events {
     this.off(evtmsk(ns, cmd));
   }
 
-
   register_cmd(ns, cmd, callback, ctx) {
     this.off(evtmsk(ns, cmd));
     this.on(evtmsk(ns, cmd), callback, ctx);
   }
 
-
   async call(ns, cmd) {
     var args = [].slice.call(arguments, 2);
     var proc = this._rpcs[evtmsk(ns, cmd, 'rpc')];
-    if(!proc)
+    if (!proc)
       throw "Invalid rpc command";
     return await proc.callback.apply(proc.ctx || this, args);
   }
@@ -285,7 +280,7 @@ class Server extends Events {
       try {
         var args = [query.args].concat(query.xargs || []);
         response = await callback.apply(this, args);
-      } catch(err) { error = '' + err; }
+      } catch (err) { error = '' + err; }
 
       client.respond(query, response, error);
     }, ctx);
@@ -293,24 +288,24 @@ class Server extends Events {
 
   async _onMessage(client, data) {
     var target = data.ns;
-    if(typeof target == 'string') {
+    if (typeof target == 'string') {
       let tmp = target.split(':'); //legacy ns:device_key syntax
       target = { ns : tmp[0], client_key : tmp[1] };
     }
 
-    if(target.client_key) { //proxy
+    if (target.client_key) { //proxy
       log.info("proxy %s from %s to %s", data, client.client_key, target.client_key);
       var remote = this._clientsList[target.client_key];
       var response;
       var error;
 
-      if(!remote)
+      if (!remote)
         remote = this.get_all_sub_client()[target.client_key];
       try {
-        if(!remote)
+        if (!remote)
           throw `Bad client '${target.client_key}'`;
         response = await remote.send.apply(remote, [target.ns, data.cmd, data.args].concat(data.xargs));
-      } catch(err) {
+      } catch (err) {
         error = err;
       }
       return client.respond(data, response, error);
@@ -325,8 +320,7 @@ class Server extends Events {
       .catch(log.error);
   }
 
-
-  broadcast (ns, cmd, payload) {
+  broadcast(ns, cmd, payload) {
     var args = arguments;
     log.info("BROADCASTING", ns, cmd);
 

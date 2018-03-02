@@ -1,23 +1,27 @@
 "use strict";
+/* eslint-env node, mocha */
 
+const expect = require('expect.js');
 const http   = require('http');
-const expect = require('expect.js')
-
 
 global.WebSocket = require('ws');
+const WsServer   = require('ws').Server;
+
 const ClientWs = require('../client/ws');
 const Server   = require('../server');
-const wsServer = require('ws').Server
 
-const port = 3000, wsPort = 8001, wsUrl = `http://localhost:${wsPort}/`;
-var server = new Server({server_port:port});
+const port   = 3000;
+const wsPort = 8001;
+const wsUrl  = `http://localhost:${wsPort}/`;
 
-describe("Basic server/client chat for webSocket", function(){
+var server = new Server({server_port : port});
+
+describe("Basic server/client chat for webSocket", function() {
 
   it("must start the server", function(done) {
-    var web_sockets = new wsServer({
-      server: http.createServer().listen(wsPort, done),
-      path : '/',
+    var web_sockets = new WsServer({
+      server : http.createServer().listen(wsPort, done),
+      path   : '/'
     });
     web_sockets.on('connection', server.new_websocket_client);
   });
@@ -34,21 +38,20 @@ describe("Basic server/client chat for webSocket", function(){
       done();
     });
 
-     client.connect();  
-   })
+    client.connect();
+  });
 
 
-  it("should support a very simple rpc definition & call", function(done){
+  it("should support a very simple rpc definition & call", function(done) {
 
     var client = new ClientWs(wsUrl);
 
     //very simple RPC design
-
-        //heavy computational operation goes here
+    //heavy computational operation goes here
     client.register_rpc("math", "sum", (a, b) => a + b);
 
 
-    server.on('base:registered_client', async(device) => {
+    server.on('base:registered_client', async (device) => {
       device = server.get_client(device.client_key);
 
       var response = await device.send("math", "sum", 2, 4);
@@ -59,7 +62,7 @@ describe("Basic server/client chat for webSocket", function(){
     });
 
     client.connect();
-  })
+  });
 
 });
 
