@@ -26,7 +26,7 @@ class WSTransport extends Events {
   destroy() {
     this.off('message');
 
-    if (this._socket)
+    if(this._socket)
       this._socket.close();
 
     this._socket = null;

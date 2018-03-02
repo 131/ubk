@@ -21,7 +21,7 @@ class TCPTransport extends Events {
     this.secured = false;
     this.client_key = null;
 
-    if (!stream.socket)
+    if(!stream.socket)
       stream.socket = stream;
 
     this._buffer = new Buffer(0);
@@ -38,7 +38,7 @@ class TCPTransport extends Events {
     this._stream.once('error', this.disconnect);
 
     // Load client cert when secured
-    if (this._stream.encrypted != null) {
+    if(this._stream.encrypted != null) {
       var cert        = this._stream.getPeerCertificate();
       this.client_key = cert.subject.CN;
       this.secured    = true;
@@ -56,7 +56,7 @@ class TCPTransport extends Events {
     var delimiter_pos;
     this._buffer = Buffer.concat([this._buffer, chars]);
 
-    while ((delimiter_pos = this._buffer.indexOf(DELIMITER)) != -1) {
+    while((delimiter_pos = this._buffer.indexOf(DELIMITER)) != -1) {
       // Read until delimiter
       var buff = this._buffer.slice(0, delimiter_pos);
       this._buffer = this._buffer.slice(delimiter_pos + 1);
@@ -65,19 +65,19 @@ class TCPTransport extends Events {
       var data = null;
       try {
         data = JSON.parse(buff.toString());
-      } catch (e) {
+      } catch(e) {
         log.info("Bad data, not json", buff, "<raw>", buff.toString(), "</raw>");
         continue;
       }
 
       // Send to client
-      if (data)
+      if(data)
         this.emit("transport_message", data).catch(log.error);
     }
   }
 
   export_json() {
-    if (!this._stream) //disconnected
+    if(!this._stream) //disconnected
       return {};
 
     return {
@@ -100,7 +100,7 @@ class TCPTransport extends Events {
   disconnect(reason) {
     log.info("Disconnected client", reason);
 
-    if (!this._stream)
+    if(!this._stream)
       return;
 
     //closing tcp connection take time -> we stop listening data

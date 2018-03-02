@@ -43,7 +43,7 @@ describe("Basic server/client chat", function() {
         try {
           await dummy.send("math:divisor", "sum", 1,2);
           expect().fail("Should not be here");
-        } catch (err) {
+        } catch(err) {
           expect(err).to.eql("Bad client 'divisor'");
         }
 

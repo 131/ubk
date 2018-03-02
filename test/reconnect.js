@@ -34,7 +34,7 @@ describe("Reconnect stress", function() {
 
     var loop = 0;
     function dostuff() {
-      if (loop++ == 10)
+      if(loop++ == 10)
         return done();
 
       client.connect();

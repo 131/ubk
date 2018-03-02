@@ -25,7 +25,7 @@ class ProxyServer extends Server {
         args.client_key  = client.client_key; //force client_key
         args.export_json = client.export_json();
         await self._client.send('base', 'register_sub_client', args);
-      } catch (err) {
+      } catch(err) {
         return client.disconnect("cant register client " + client.client_key);
       }
 
@@ -35,7 +35,7 @@ class ProxyServer extends Server {
       client.registration_parameters.export_json = client.export_json();
 
       client.on('received_cmd', async (client, data) => {
-        if (data.ns == 'base' &&  data.cmd == 'ping')
+        if(data.ns == 'base' &&  data.cmd == 'ping')
           return;
         data.ns = {sub_client_key : client.client_key, ns : data.ns};
 
@@ -43,7 +43,7 @@ class ProxyServer extends Server {
         var error;
         try {
           response = await this._client.send.apply(this._client, [data.ns, data.cmd, data.args].concat(data.xargs || []));
-        } catch (err) {
+        } catch(err) {
           error = err;
         }
         return client.respond(data, response, error);
@@ -53,7 +53,7 @@ class ProxyServer extends Server {
     this.on('unregistered_device', async (client) => {
       try {
         await this._client.send('base', 'unregister_sub_client', {client_key : client.client_key});
-      } catch (err) {
+      } catch(err) {
         log.error("cant unregister client !", client.client_key, err);
       }
     });
@@ -72,19 +72,19 @@ class ProxyServer extends Server {
     this._client.start().catch((err) => log.error(err.stack));
 
     this._client.on('message', async (data) => {
-      if (data.ns == 'base' && data.cmd == 'ping')
+      if(data.ns == 'base' && data.cmd == 'ping')
         return;
       var sub_client_key = data.ns.sub_client_key;
-      if (sub_client_key) {
+      if(sub_client_key) {
         log.info("proxy %s from %s to %s", data, sub_client_key);
         var remote = this._clientsList[sub_client_key];
         var response;
         var error;
         try {
-          if (!remote)
+          if(!remote)
             throw `Bad client '${sub_client_key}'`; //maybe unregist device
           response = await remote.send.apply(remote, [data.ns.ns, data.cmd, data.args].concat(data.xargs || []));
-        } catch (err) {
+        } catch(err) {
           error = err;
         }
         return this._client.respond(data, response, error);

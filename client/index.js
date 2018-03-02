@@ -44,7 +44,7 @@ class Client extends Events {
     delete query.args;
     try {
       this._transport.write(query);
-    } catch (err) {
+    } catch(err) {
       log.error("can't write in the socket", err);
     }
   }
@@ -63,7 +63,7 @@ class Client extends Events {
 
     try {
       this._transport.write(query);
-    } catch (err) {
+    } catch(err) {
       log.error("can't write in the socket", err);
       promise.reject(err);
     }
@@ -78,7 +78,7 @@ class Client extends Events {
   async call(ns, cmd) {
     var args = [].slice.call(arguments, 2);
     var proc = this._rpcs[evtmsk(ns, cmd, 'rpc')];
-    if (!proc)
+    if(!proc)
       throw "Invalid rpc command";
     return await proc.callback.apply(proc.ctx || this, args);
   }
@@ -93,7 +93,7 @@ class Client extends Events {
       try {
         var args = [query.args].concat(query.xargs || []);
         response = await callback.apply(this, args);
-      } catch (err) { error = '' + err; }
+      } catch(err) { error = '' + err; }
 
       client.respond(query, response, error);
     }, ctx);
@@ -101,7 +101,7 @@ class Client extends Events {
 
   async _run() {
 
-    if (this._looping)
+    if(this._looping)
       throw "Already connected";
 
     this._looping = true;
@@ -111,7 +111,7 @@ class Client extends Events {
     var wait = defer();
 
     do {
-      if (this.shouldStop) {
+      if(this.shouldStop) {
         await sleep(200);
         continue;
       }
@@ -139,41 +139,41 @@ class Client extends Events {
           wait = defer();
           setTimeout(wait.reject, 10000);
           var response =  await Promise.race([this.send('base', 'ping'), wait]);
-          if (response != 'pong')
+          if(response != 'pong')
             throw "Invalid ping challenge reponse";
 
-          if (this.shouldStop)
+          if(this.shouldStop)
             throw "Should stop everything";
 
           wait = defer();
           setTimeout(wait.resolve, 10000);
           await wait;
-        } while (true);
+        } while(true);
 
-      } catch (err) {
+      } catch(err) {
         wait.resolve(); //make sure not unHandler promise can trigger
         log.error('' + err);
-        if (this._transport)
+        if(this._transport)
           this._transport.destroy();
 
         this._transport = null;
 
-        if (this.connected) {
+        if(this.connected) {
           this.connected = false;
           this.emit('disconnected', err).catch(log.error);
         }
 
         this.connected = false;
-        if (this.shouldStop)
+        if(this.shouldStop)
           continue; //no need to wait
         await sleep(this.options.reconnect_delay);
       }
 
-    } while (true);
+    } while(true);
   }
 
   export_json() {
-    if (this._transport)
+    if(this._transport)
       return this._transport.export_json();
     return {};
   }
@@ -187,7 +187,7 @@ class Client extends Events {
   }
 
   disconnect() {
-    if (this._transport)
+    if(this._transport)
       this._transport.destroy();
 
     this.shouldStop = true;
@@ -195,7 +195,7 @@ class Client extends Events {
 
   _onMessage(data) {
 
-    if (((data.ns == 'base') && (data.cmd == 'ping')) || (data.response == 'pong'))
+    if(((data.ns == 'base') && (data.cmd == 'ping')) || (data.response == 'pong'))
       log.ping("Received", data);
     else
       log.info("Received", data);
@@ -203,7 +203,7 @@ class Client extends Events {
     // Local call stack
     var callback = this._call_stack[data.quid];
 
-    if (callback) {
+    if(callback) {
       callback.promise.chain(data.error, data.response);
       this.emit(EVENT_SOMETHING_APPEND, callback.ns, callback.cmd).catch(log.error);
       delete this._call_stack[data.quid];

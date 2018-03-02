@@ -32,10 +32,10 @@ class Client extends Events {
     this._call_stack  = {};
     this._sub_clients = {};
 
-    if (type == 'ws')
+    if(type == 'ws')
       this.transport  = new WSTransport(stream);
 
-    if (type == 'tcp')
+    if(type == 'tcp')
       this.transport = new TCPTransport(stream);
 
     this.type = type;
@@ -67,13 +67,13 @@ class Client extends Events {
   // React to received data
   receive(data) {
     // Debug
-    if (((data.ns == 'base') && (data.cmd == 'ping')) || (data.response == 'pong'))
+    if(((data.ns == 'base') && (data.cmd == 'ping')) || (data.response == 'pong'))
       log.ping("Received", data, "from client", this.client_key);
     else
       log.info("Received", data, "from client", this.client_key);
 
     var callback = this._call_stack[data.quid];
-    if (callback) {
+    if(callback) {
       callback.promise.chain(data.error, data.response);
       delete this._call_stack[data.quid];
       return;
@@ -82,7 +82,7 @@ class Client extends Events {
     var remote         = this;
     var sub_client_key = data.ns && data.ns.sub_client_key;
 
-    if (sub_client_key && this._sub_clients[sub_client_key])
+    if(sub_client_key && this._sub_clients[sub_client_key])
       remote = this._sub_clients[sub_client_key];
 
     this.emit('received_cmd', remote, data).catch(log.error);
@@ -95,7 +95,7 @@ class Client extends Events {
 
     try {
       this.write(query);
-    } catch (err) {
+    } catch(err) {
       log.error("can't write in the socket", err);
     }
   }
@@ -110,12 +110,12 @@ class Client extends Events {
 
     this._call_stack[quid] = { ns, cmd, promise };
 
-    if (!(query.ns == 'base' && query.cmd == 'ping'))
+    if(!(query.ns == 'base' && query.cmd == 'ping'))
       log.info("Send msg '%s:%s' to %s", query.ns, query.cmd, this.client_key);
 
     try {
       this.write(query);
-    } catch (err) {
+    } catch(err) {
       log.error("can't write in the socket", err);
       promise.reject(err);
     }
@@ -125,7 +125,7 @@ class Client extends Events {
 
   // Low Level send raw JSON
   respond(query, response, error) {
-    if (!(query.ns == 'base' && query.cmd == 'ping'))
+    if(!(query.ns == 'base' && query.cmd == 'ping'))
       log.info("Responding msg '%s:%s' to %s ", query.ns, query.cmd, this.client_key);
 
     query.response = response;
@@ -138,7 +138,7 @@ class Client extends Events {
 
     try {
       this.write(query);
-    } catch (err) {
+    } catch(err) {
       log.error("can't write in the socket", err);
     }
   }
@@ -157,7 +157,7 @@ class Client extends Events {
   }
 
   add_sub_client(client_key) {
-    if (this._sub_clients[client_key])
+    if(this._sub_clients[client_key])
       return this._sub_clients[client_key];
     this._sub_clients[client_key] = new SubClient(this, client_key);
     log.info("sub client %s connect", client_key);

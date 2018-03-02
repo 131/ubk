@@ -39,13 +39,13 @@ class TCPTransport extends Events {
     var delimiter_pos;
     this._buffer = Buffer.concat([this._buffer, chars]);
 
-    while ((delimiter_pos = this._buffer.indexOf(Delimiter)) != -1) {
+    while((delimiter_pos = this._buffer.indexOf(Delimiter)) != -1) {
       var buff = this._buffer.slice(0, delimiter_pos);
       var data;
       this._buffer = this._buffer.slice(delimiter_pos + 1);
       try {
         data = JSON.parse(buff.toString());
-      } catch (e) {
+      } catch(e) {
         log.error("Parsing response failed", e);
       }
       this.emit('message', data).catch(log.error);
@@ -55,7 +55,7 @@ class TCPTransport extends Events {
   destroy() {
     this.off('message');
 
-    if (this._socket)
+    if(this._socket)
       this._socket.destroy();
 
     this._socket = null;
@@ -63,7 +63,7 @@ class TCPTransport extends Events {
 
   export_json() {
 
-    if (!this._socket)
+    if(!this._socket)
       return {};
     return {
       type    : 'tcp',

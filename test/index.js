@@ -46,7 +46,7 @@ describe("Basic server/client chat", function() {
     try {
       await server.call("nope", "echo", 22);
       expect.fail("Never here");
-    } catch (err) {
+    } catch(err) {
       expect(err).to.be("Invalid rpc command");
     }
   });
@@ -63,13 +63,13 @@ describe("Basic server/client chat", function() {
       try {
         await client.send("base", "crash");
         expect().fail("Should have crash by now");
-      } catch (error) {
+      } catch(error) {
         expect(error).to.eql("This is an error");
       }
       try {
         await client.send("base", "crash_with_binding");
         expect().fail("Should have crash by now");
-      } catch (error) {
+      } catch(error) {
         expect(error).to.eql("This is an error");
       }
       done();
@@ -90,7 +90,7 @@ describe("Basic server/client chat", function() {
       try {
         await device.send("client", "crash");
         throw "Never here";
-      } catch (err) {
+      } catch(err) {
         expect(err).to.eql("This is an error");
       }
 
@@ -167,7 +167,7 @@ describe("Basic server/client chat", function() {
       try {
         await client.call("nope", "sum", 2, 7);
         expect.fail("Never here");
-      } catch (err) {
+      } catch(err) {
         expect(err).to.be("Invalid rpc command");
       }
 
@@ -221,7 +221,7 @@ describe("Basic server/client chat", function() {
         checks[i] = true;
         device.disconnect();
 
-        if (Object.keys(checks).length == clients.length) {
+        if(Object.keys(checks).length == clients.length) {
           server.off('base:registered_client');
           console.log({connectedClients, clients : clients.length});
           expect(connectedClients).to.eql(clients.length);

@@ -53,7 +53,7 @@ class Server extends Events {
     this.lost_client          = this.lost_client.bind(this);
     this.call                 = this.call.bind(this);
 
-    if (this.options.secured)
+    if(this.options.secured)
       this.tcp_server = tls.createServer(this.options.tls_options, this.new_tcp_client);
     else
       this.tcp_server = net.createServer(this.new_tcp_client);
@@ -68,7 +68,7 @@ class Server extends Events {
       var response;
       try {
         await this.register_sub_client(client, sub_client_registrationargs);
-      } catch (err) {
+      } catch(err) {
         log.error(err);
         error = err;
       }
@@ -81,7 +81,7 @@ class Server extends Events {
       var response;
       try {
         this.unregister_sub_client(client, sub_client_key);
-      } catch (err) {
+      } catch(err) {
         log.error(err);
         error = err;
       }
@@ -94,7 +94,7 @@ class Server extends Events {
     var client_capability = sub_client_registrationargs.client_capability;
     var all_sub_client    = this.get_all_sub_client();
 
-    if (all_sub_client[sub_client_key])
+    if(all_sub_client[sub_client_key])
       throw `Client '${sub_client_key}' already exists, sorry`;
     var validated_data = await this.validate_sub_client(sub_client_key, client_capability);
     var sub_client     = client.add_sub_client(sub_client_key);
@@ -109,7 +109,7 @@ class Server extends Events {
 
   unregister_sub_client(client, sub_client_key) {
     var sub_client = client._sub_clients[sub_client_key];
-    if (!sub_client)
+    if(!sub_client)
       throw `Client '${sub_client_key}' already unregistred`;
     client.remove_sub_client(sub_client.client_key);
     this.emit('unregister_sub_client', sub_client).catch(log.error);
@@ -155,7 +155,7 @@ class Server extends Events {
   heartbeat() {
     forIn (this._clientsList, (client) => {
       // Check failures
-      if (client.ping_failure) {
+      if(client.ping_failure) {
         log.info("client %s failed ping challenge, assume disconnected", client.client_key);
         return client.disconnect();
       }
@@ -186,35 +186,35 @@ class Server extends Events {
     try {
       var args = query.args;
       //can only register once...
-      if (query.ns != 'base' || query.cmd != 'register')
+      if(query.ns != 'base' || query.cmd != 'register')
         throw `Un-expected registration query`;
 
-      if (client.client_key)
+      if(client.client_key)
         throw `Already registered client '${client.client_key}'`;
 
       client.client_key = args.client_key;
       // Check SSL client cert matches
       var exp = client.export_json();
 
-      if (exp.secured && exp.name != client.client_key)
+      if(exp.secured && exp.name != client.client_key)
         throw `The cert '${exp.name}' does NOT match the given id '${client.client_key}'`;
 
-      if (!client.client_key)
+      if(!client.client_key)
         throw `No id for client to register`;
 
       // Avoid conflicts
-      if (this._clientsList[client.client_key])
+      if(this._clientsList[client.client_key])
         throw `Client '${client.client_key}' already exists, sorry`;
 
       try {
-        for (var sub in args.sub_Clients_list || [])
+        for(var sub in args.sub_Clients_list || [])
           await this.register_sub_client(client, sub);
-      } catch (error) {
+      } catch(error) {
         log.error('cant register subClient', error);
       }
 
-    } catch (err) {
-      if (typeof query == 'object')
+    } catch(err) {
+      if(typeof query == 'object')
         client.respond(query, null, err);
       return client.disconnect();
     }
@@ -229,7 +229,7 @@ class Server extends Events {
     // THAT'S GREAT, LET'S NOTIFY EVERYBOOOOODYYYY
     client.emit('registered', args).catch(log.error);
     this.emit('registered_device', client, args).catch(log.error);
-    if (this.options.broadcasting_registration)
+    if(this.options.broadcasting_registration)
       this.broadcast('base', 'registered_client', client.export_json());
   }
 
@@ -241,7 +241,7 @@ class Server extends Events {
     forIn (client._sub_clients, (sub_client) => {
       try {
         this.unregister_sub_client(client, sub_client.client_key);
-      } catch (err) {
+      } catch(err) {
         log.error(err);
       }
     });
@@ -249,7 +249,7 @@ class Server extends Events {
     delete this._clientsList[client.client_key];
 
     this.emit('unregistered_device', client).catch(log.error);
-    if (this.options.broadcasting_registration)
+    if(this.options.broadcasting_registration)
       this.broadcast('base', 'unregistered_client', {client_key : client.client_key });
   }
 
@@ -265,7 +265,7 @@ class Server extends Events {
   async call(ns, cmd) {
     var args = [].slice.call(arguments, 2);
     var proc = this._rpcs[evtmsk(ns, cmd, 'rpc')];
-    if (!proc)
+    if(!proc)
       throw "Invalid rpc command";
     return await proc.callback.apply(proc.ctx || this, args);
   }
@@ -280,7 +280,7 @@ class Server extends Events {
       try {
         var args = [query.args].concat(query.xargs || []);
         response = await callback.apply(this, args);
-      } catch (err) { error = '' + err; }
+      } catch(err) { error = '' + err; }
 
       client.respond(query, response, error);
     }, ctx);
@@ -288,24 +288,24 @@ class Server extends Events {
 
   async _onMessage(client, data) {
     var target = data.ns;
-    if (typeof target == 'string') {
+    if(typeof target == 'string') {
       let tmp = target.split(':'); //legacy ns:device_key syntax
       target = { ns : tmp[0], client_key : tmp[1] };
     }
 
-    if (target.client_key) { //proxy
+    if(target.client_key) { //proxy
       log.info("proxy %s from %s to %s", data, client.client_key, target.client_key);
       var remote = this._clientsList[target.client_key];
       var response;
       var error;
 
-      if (!remote)
+      if(!remote)
         remote = this.get_all_sub_client()[target.client_key];
       try {
-        if (!remote)
+        if(!remote)
           throw `Bad client '${target.client_key}'`;
         response = await remote.send.apply(remote, [target.ns, data.cmd, data.args].concat(data.xargs));
-      } catch (err) {
+      } catch(err) {
         error = err;
       }
       return client.respond(data, response, error);

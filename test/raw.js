@@ -55,7 +55,7 @@ describe("Raw server/client chat", function() {
     var client = new Client({server_port : port, client_key : "foo"});
     var next   = function(what) {
       next[what] = true;
-      if (next["error"] && next["disconnect"])
+      if(next["error"] && next["disconnect"])
         done();
     };
 
@@ -64,7 +64,7 @@ describe("Raw server/client chat", function() {
       try {
         await client.send("base", "register", {client_key : "foo" });
         expect().fail("Should not be connected");
-      } catch (err) {
+      } catch(err) {
         expect(err).to.match(/Already registered client/);
         next("error");
       }
@@ -111,7 +111,7 @@ describe("Raw server/client chat", function() {
 
     var next = function(what) {
       next[what] = true;
-      if (next["error"] && next["disconnect"])
+      if(next["error"] && next["disconnect"])
         done();
     };
 

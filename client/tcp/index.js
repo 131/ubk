@@ -35,7 +35,7 @@ class TCPClient extends Client {
     this.client_key = options.client_key || guid();
     var license     = options.license;
 
-    if (license) {
+    if(license) {
       this._tls = {
         key  : license.private_key,
         cert : license.client_certificate,
@@ -50,7 +50,7 @@ class TCPClient extends Client {
 
     log.info(`using proxy ${proxy_url.host}`);
 
-    if (!proxy_url.port || !proxy_url.hostname)
+    if(!proxy_url.port || !proxy_url.hostname)
       defered.reject(`Invalid proxy url '${this.options.PROXY}'`);
 
     var socket = net.createConnection(proxy_url.port, proxy_url.hostname, defered.chain);
@@ -64,10 +64,10 @@ class TCPClient extends Client {
     defered = defer();
     socket.once("data", (data) => {
       var i = data.indexOf("\r\n\r\n");
-      if (i == -1)
+      if(i == -1)
         return defered.reject("No remote connection");
       var header = "" + data.slice(0, i);
-      if (!success.test(header))
+      if(!success.test(header))
         return defered.reject(`Invalid proxy response '${header}'`);
       log.info(`connection to proxy established ${header}`);
       defered.resolve(socket);
@@ -85,10 +85,10 @@ class TCPClient extends Client {
 
     log.info(`try to connect to ${lnk.host}:${lnk.port}`);
 
-    if (this.options.PROXY)
+    if(this.options.PROXY)
       lnk = {socket : await this.build_proxy_socket(lnk) };
 
-    if (is_secured) {
+    if(is_secured) {
       Object.assign(lnk, {
         rejectUnauthorized : false,
         servername         : this.options.server_hostname.toLowerCase(),

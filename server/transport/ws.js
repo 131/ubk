@@ -26,7 +26,7 @@ class WSTransport extends Events {
   }
 
   export_json() {
-    if (!this._stream) //disconnected
+    if(!this._stream) //disconnected
       return {};
 
     return {
@@ -47,7 +47,7 @@ class WSTransport extends Events {
   disconnect(reason) {
     log.info("Disconnected client", reason);
 
-    if (!this._stream)
+    if(!this._stream)
       return;
 
     this._stream.removeAllListeners('message');
