@@ -65,11 +65,12 @@ class ProxyServer extends Server {
         sub_Clients_list : pluck(this._clientsList, 'registration_parameters'),
         type             : 'slave',
         address          : this.address,
+        name             : options.name,
         port             : this.options.server_port
       };
     });
 
-    this._client.start().catch((err) => log.error(err.stack));
+    this._client._run().catch((err) => log.error(err.stack));
 
     this._client.on('message', async (data) => {
       if(data.ns == 'base' && data.cmd == 'ping')
