@@ -43,8 +43,9 @@ class TCPTransport extends Events {
       this.client_key = cert.subject.CN;
       this.secured    = true;
       log.info("Connected using SSL cert " + this.client_key);
-    } else
+    } else {
       this.client_key = guid();
+    }
   }
 
   // Received some data
