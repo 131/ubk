@@ -208,7 +208,7 @@ class Server extends Events {
 
       try {
         for(var sub in args.sub_Clients_list || [])
-          await this.register_sub_client(client, sub);
+          await this.register_sub_client(client, args.sub_Clients_list[sub]);
       } catch(error) {
         log.error('cant register subClient', error);
       }
