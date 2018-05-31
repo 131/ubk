@@ -20,7 +20,7 @@ class ProxyServer extends Server {
     var self = this;
     this.address = options.address;
 
-    this.on('registered_device', async function(client, args) {
+    this.on('registered_device', async (client, args) => {
       try {
         args.client_key  = client.client_key; //force client_key
         args.export_json = client.export_json();
