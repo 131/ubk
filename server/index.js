@@ -292,19 +292,21 @@ class Server extends Events {
       let tmp = target.split(':'); //legacy ns:device_key syntax
       target = { ns : tmp[0], client_key : tmp[1] };
     }
-
     if(target.client_key) { //proxy
-      log.info("proxy %s from %s to %s", data, client.client_key, target.client_key);
-      var remote = this._clientsList[target.client_key];
       var response;
       var error;
-
+      if(target.client_key == "*") {
+        this.broadcast(...[target.ns, data.cmd, data.args].concat(data.xargs));
+        return client.respond(data, 'done');
+      }
+      log.info("proxy %s from %s to %s", data, client.client_key, target.client_key);
+      var remote = this._clientsList[target.client_key];
       if(!remote)
         remote = this.get_all_sub_client()[target.client_key];
       try {
         if(!remote)
           throw `Bad client '${target.client_key}'`;
-        response = await remote.send.apply(remote, [target.ns, data.cmd, data.args].concat(data.xargs));
+        response = await remote.send(...[target.ns, data.cmd, data.args].concat(data.xargs));
       } catch(err) {
         error = err;
       }

@@ -6,6 +6,7 @@ const expect = require('expect.js');
 const range      = require('mout/array/range');
 const sleep      = require('nyks/function/sleep');
 const stripStart = require('nyks/string/stripStart');
+const randString = require('mout/random/randString');
 
 const Server = require('../server');
 const Client = require('../client/tcp');
@@ -231,6 +232,38 @@ describe("Basic server/client chat", function() {
     });
 
     clients.forEach(function(client) { client.connect(); });
+  });
+
+
+  it("should support client brodcast", function(done) {
+    var client1 = new Client({server_port : port});
+    var client2 = new Client({server_port : port});
+    var client3 = new Client({server_port : port});
+    var connected = 0;
+    var hit = 0;
+    server.on('base:registered_client', async () => {
+      connected = connected + 1;
+      var arg1 = randString();
+      var arg2 = randString();
+      var ns   = randString();
+      var cmd  = randString();
+
+      var callback = (a, b) => {
+        if(a != arg1 || b != arg2)
+          throw 'error on argument';
+        hit = hit + 1;
+        if(hit == 2)
+          done();
+      };
+      if(connected == 3) {
+        client1.register_rpc(ns, cmd, callback);
+        client2.register_rpc(ns, cmd, callback);
+        client1.send(`${ns}:*`, cmd, arg1, arg2);
+      }
+    });
+    client1.connect();
+    client2.connect();
+    client3.connect();
   });
 
 });
