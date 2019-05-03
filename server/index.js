@@ -62,57 +62,6 @@ class Server extends Events {
     this.register_rpc('base', 'ping', () => 'pong');
     this.register_cmd('base', 'register', this.register_client);
 
-    this.register_cmd('base', 'register_sub_client', async (client, query) => {
-      var sub_client_registrationargs = query.args;
-      var error;
-      var response;
-      try {
-        await this.register_sub_client(client, sub_client_registrationargs);
-      } catch(err) {
-        log.error(err);
-        error = err;
-      }
-      client.respond(query, response, error);
-    });
-
-    this.register_cmd('base', 'unregister_sub_client', async (client, query) => {
-      var sub_client_key    = query.args.client_key;
-      var error;
-      var response;
-      try {
-        this.unregister_sub_client(client, sub_client_key);
-      } catch(err) {
-        log.error(err);
-        error = err;
-      }
-      client.respond(query, response, error);
-    });
-  }
-
-  async register_sub_client(client, sub_client_registrationargs) {
-    var sub_client_key    = sub_client_registrationargs.client_key;
-    var client_capability = sub_client_registrationargs.client_capability;
-    var all_sub_client    = this.get_all_sub_client();
-
-    if(all_sub_client[sub_client_key])
-      throw `Client '${sub_client_key}' already exists, sorry`;
-    var validated_data = await this.validate_sub_client(sub_client_key, client_capability);
-    var sub_client     = client.add_sub_client(sub_client_key);
-
-    sub_client.export_json = () => {
-      var status     = sub_client_registrationargs.export_json;
-      status.uptime  = Math.floor((Date.now() / 1000 - status.registration_time));
-      return status;
-    };
-    this.emit('register_sub_client', sub_client, validated_data).catch(log.error);
-  }
-
-  unregister_sub_client(client, sub_client_key) {
-    var sub_client = client._sub_clients[sub_client_key];
-    if(!sub_client)
-      throw `Client '${sub_client_key}' already unregistred`;
-    client.remove_sub_client(sub_client.client_key);
-    this.emit('unregister_sub_client', sub_client).catch(log.error);
   }
 
   async validate_sub_client() {
@@ -121,14 +70,6 @@ class Server extends Events {
 
   get_client(client_key) {
     return this._clientsList[client_key];
-  }
-
-  get_all_sub_client() {
-    var all_sub_client = {};
-    forIn (this._clientsList, (client) => {
-      all_sub_client = merge(all_sub_client, client._sub_clients);
-    });
-    return all_sub_client;
   }
 
   start() { /*chain*/
@@ -206,13 +147,6 @@ class Server extends Events {
       if(this._clientsList[client.client_key])
         throw `Client '${client.client_key}' already exists, sorry`;
 
-      try {
-        for(var sub in args.sub_Clients_list || [])
-          await this.register_sub_client(client, args.sub_Clients_list[sub]);
-      } catch(error) {
-        log.error('cant register subClient', error);
-      }
-
     } catch(err) {
       if(typeof query == 'object')
         client.respond(query, null, err);
@@ -237,17 +171,7 @@ class Server extends Events {
   lost_client(client) {
     // Remove from list
     log.info("Lost client", client.client_key);
-
-    forIn (client._sub_clients, (sub_client) => {
-      try {
-        this.unregister_sub_client(client, sub_client.client_key);
-      } catch(err) {
-        log.error(err);
-      }
-    });
-
     delete this._clientsList[client.client_key];
-
     this.emit('unregistered_device', client).catch(log.error);
     if(this.options.broadcasting_registration)
       this.broadcast('base', 'unregistered_client', {client_key : client.client_key });
@@ -301,8 +225,6 @@ class Server extends Events {
       }
       log.info("proxy %s from %s to %s", data, client.client_key, target.client_key);
       var remote = this._clientsList[target.client_key];
-      if(!remote)
-        remote = this.get_all_sub_client()[target.client_key];
       try {
         if(!remote)
           throw `Bad client '${target.client_key}'`;

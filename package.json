@@ -7,6 +7,7 @@
     "coveralls": "npm install coveralls && node ./node_modules/coveralls/bin/coveralls.js < ./coverage/lcov.info",
     "discify": "browserify --ignore cnyks --node -p discify index.js | discify-reporter --ir://run --source=disc/graph.json",
     "cover": "node node_modules/istanbul-alpha-instrument/lib/cli.js cover --report text-summary --report html --report lcov  node_modules/mocha/bin/_mocha",
+    "mocha": "mocha test",
     "test": "npm run eslint && npm run cover",
     "eslint": "eslint server client test"
   },
