@@ -64,10 +64,6 @@ class Server extends Events {
 
   }
 
-  async validate_sub_client() {
-    return true; // to be overrided
-  }
-
   get_client(client_key) {
     return this._clientsList[client_key];
   }
@@ -147,6 +143,8 @@ class Server extends Events {
       if(this._clientsList[client.client_key])
         throw `Client '${client.client_key}' already exists, sorry`;
 
+      await this.validate_device();
+
     } catch(err) {
       if(typeof query == 'object')
         client.respond(query, null, err);
@@ -165,6 +163,10 @@ class Server extends Events {
     this.emit('registered_device', client, args).catch(log.error);
     if(this.options.broadcasting_registration)
       this.broadcast('base', 'registered_client', client.export_json());
+  }
+
+  async validate_device() {
+    return true;
   }
 
 
