@@ -143,7 +143,7 @@ class Server extends Events {
       if(this._clientsList[client.client_key])
         throw `Client '${client.client_key}' already exists, sorry`;
 
-      await this.validate_device();
+      await this.validate_device(client, args);
 
     } catch(err) {
       if(typeof query == 'object')
