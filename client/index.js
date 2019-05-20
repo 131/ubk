@@ -121,7 +121,9 @@ class Client extends Events {
 
         this._transport = await this.transport();
         this._transport.on('message', this._onMessage.bind(this));
-        this._transport.once('error',  wait.reject.bind(wait));
+        this._transport.once('error',  (err) => {
+          wait.reject(err);
+        });
 
         this.connected = true;
 
