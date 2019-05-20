@@ -94,14 +94,14 @@ class Server extends Events {
       // Check failures
       if(client.ping_failure) {
         log.info("client %s failed ping challenge, assume disconnected", client.client_key);
-        return client.disconnect();
+        return client.disconnect(`failed ping challenge ${client.client_key}`);
       }
 
       // Send ping
       client.ping_failure = true;
       client.send('base', 'ping').then(function (response) {
         client.ping_failure = !(response == 'pong');
-      });
+      }).catch(() => {});
     });
   }
 
@@ -145,24 +145,29 @@ class Server extends Events {
 
       await this.validate_device(client, args);
 
+      client.respond(query, 'ok');
+      // Save client
+      this._clientsList[client.client_key] = client;
+
+      client.once('disconnected', this.lost_client);
+      client.on('received_cmd', this._onMessage.bind(this));
+
+      // THAT'S GREAT, LET'S NOTIFY EVERYBOOOOODYYYY
+      client.emit('registered', args).catch(log.error);
+      this.emit('registered_device', client, args).catch(log.error);
+      if(this.options.broadcasting_registration)
+        this.broadcast('base', 'registered_client', client.export_json());
+
     } catch(err) {
-      if(typeof query == 'object')
-        client.respond(query, null, err);
-      return client.disconnect();
+      var message = (typeof err == "string") ? err : 'error on server client registration';
+      if(err.message)
+        message = err.message;
+      try {
+        client.respond(query, null, message);
+      } catch(err) {}
+      client.disconnect(message);
     }
 
-    // Save client
-    this._clientsList[client.client_key] = client;
-
-    client.respond(query, 'ok');
-    client.once('disconnected', this.lost_client);
-    client.on('received_cmd', this._onMessage.bind(this));
-
-    // THAT'S GREAT, LET'S NOTIFY EVERYBOOOOODYYYY
-    client.emit('registered', args).catch(log.error);
-    this.emit('registered_device', client, args).catch(log.error);
-    if(this.options.broadcasting_registration)
-      this.broadcast('base', 'registered_client', client.export_json());
   }
 
   async validate_device() {

@@ -126,11 +126,7 @@ class Client extends Events {
     delete query.xargs;
     delete query.args;
 
-    try {
-      this.write(query);
-    } catch(err) {
-      log.error("can't write in the socket", err);
-    }
+    this.write(query);
   }
 
   write(query) {
