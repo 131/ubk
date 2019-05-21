@@ -6,8 +6,8 @@ const Events  = require('eventemitter-co');
 const guid    = require('mout/random/guid');
 
 const log = {
-  info  : debug("ubk:server:client:tcp"),
-  error : debug("ubk:server:client:tcp"),
+  info  : debug("ubk:server:client:tcp:info"),
+  error : debug("ubk:server:client:tcp:error"),
 };
 
 const DELIMITER = 27;

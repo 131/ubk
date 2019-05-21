@@ -14,8 +14,8 @@ const Client = require('./client.js');
 const EVENT_SOMETHING_APPEND = 'change_append';
 
 const log = {
-  info  : debug('ubk:server'),
-  error : debug('ubk:server'),
+  info  : debug('ubk:server:info'),
+  error : debug('ubk:server:error'),
 };
 
 const evtmsk = function(ns, cmd) {

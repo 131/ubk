@@ -10,8 +10,8 @@ const TCPTransport = require('./transport/tcp');
 const WSTransport  = require('./transport/ws');
 
 const log = {
-  info  : debug('ubk:server:client'),
-  error : debug('ubk:server:client'),
+  info  : debug('ubk:server:client:info'),
+  error : debug('ubk:server:client:error'),
   ping  : debug('ubk:server:ping')
 };
 

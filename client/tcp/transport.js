@@ -6,8 +6,8 @@ const debug  = require('debug');
 const Delimiter = 27;
 
 const log = {
-  error : debug("ubk:client:tcp"),
-  info  : debug("ubk:client:tcp")
+  error : debug("ubk:client:tcp:error"),
+  info  : debug("ubk:client:tcp:info")
 };
 
 class TCPTransport extends Events {
@@ -24,8 +24,8 @@ class TCPTransport extends Events {
       this.emit('error', err).catch(log.error);
     };
     socket.once('error', error);
-    socket.once('end', error);
-    socket.once('close', error);
+    socket.once('end', error.bind(this, 'stream end'));
+    socket.once('end', error.bind(this, 'stream close'));
   }
 
   // Low level method to send JSON data
