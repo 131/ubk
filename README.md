@@ -19,6 +19,7 @@ High performance, micro [JSON streaming](https://en.wikipedia.org/wiki/JSON_Stre
 
 
 
+
 ## Server API
  * Server implement EventEmitter API.
 `.register_cmd(ns, command, callback)`
