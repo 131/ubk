@@ -159,11 +159,7 @@ class Client extends Events {
 
         this._transport = null;
 
-        if(this.connected) {
-          this.connected = false;
-          this.emit('disconnected', err).catch(log.error);
-        }
-
+        this.emit('disconnected', err).catch(log.error);
         this.connected = false;
         if(this.shouldStop)
           continue; //no need to wait

@@ -148,6 +148,7 @@ class Server extends Events {
       let connected = true;
       client.once('disconnected', () => connected = false);
       client.respond(query, 'ok'); //respond may disconnect client
+      client.off('disconnected');
 
       if(!connected)
         throw `client disconnected`;
