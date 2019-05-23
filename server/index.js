@@ -145,10 +145,10 @@ class Server extends Events {
 
       await this.validate_device(client, args);
 
-      let connected = true;
-      client.once('disconnected', () => connected = false);
+      let connected = true, reset = () => connected = false;
+      client.once('disconnected', reset);
       client.respond(query, 'ok'); //respond may disconnect client
-      client.off('disconnected');
+      client.off('disconnected', reset);
 
       if(!connected)
         throw `client disconnected`;

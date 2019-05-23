@@ -6,7 +6,7 @@
   "scripts": {
     "coveralls": "npm install coveralls && node ./node_modules/coveralls/bin/coveralls.js < ./coverage/lcov.info",
     "discify": "browserify --ignore cnyks --node -p discify index.js | discify-reporter --ir://run --source=disc/graph.json",
-    "cover": "node node_modules/istanbul-alpha-instrument/lib/cli.js cover --report text-summary --report html --report lcov  node_modules/mocha/bin/_mocha",
+    "cover": "nyc --temp-directory coverage/.nyc_output --reporter text-summary --reporter html --reporter lcov  mocha",
     "mocha": "mocha test",
     "test": "npm run eslint && npm run cover",
     "eslint": "eslint server client test"
@@ -28,16 +28,15 @@
   "homepage": "https://github.com/131/ubk",
   "dependencies": {
     "debug": "^2.3.0",
-    "eventemitter-co": "^2.0.3",
+    "eventemitter-co": "^2.0.5",
     "mout": "^1.0.0",
-    "nyks": "^4.1.10"
+    "nyks": "^5.11.8"
   },
   "devDependencies": {
+    "eslint-plugin-ivs": "^2.1.0",
     "expect.js": "^0.3.1",
-    "istanbul": "^0.4.5",
-    "istanbul-alpha-instrument": "1.1.0-alpha.1",
-    "eslint-plugin-ivs": "^1.0.3",
     "mocha": "^3.1.2",
+    "nyc": "^13.0.1",
     "ws": "^1.1.0"
   }
 }
