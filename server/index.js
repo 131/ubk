@@ -145,10 +145,15 @@ class Server extends Events {
 
       await this.validate_device(client, args);
 
-      client.respond(query, 'ok');
+      let connected = true;
+      client.once('disconnected', () => connected = false);
+      client.respond(query, 'ok'); //respond may disconnect client
+
+      if(!connected)
+        throw `client disconnected`;
+
       // Save client
       this._clientsList[client.client_key] = client;
-
       client.once('disconnected', this.lost_client);
       client.on('received_cmd', this._onMessage.bind(this));
 

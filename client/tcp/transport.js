@@ -25,7 +25,7 @@ class TCPTransport extends Events {
     };
     socket.once('error', error);
     socket.once('end', error.bind(this, 'stream end'));
-    socket.once('end', error.bind(this, 'stream close'));
+    socket.once('close', error.bind(this, 'stream close'));
   }
 
   // Low level method to send JSON data
