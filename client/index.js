@@ -93,7 +93,7 @@ class Client extends Events {
       try {
         var args = [query.args].concat(query.xargs || []);
         response = await callback.apply(this, args);
-      } catch(err) { error = '' + err; }
+      } catch(err) {error = (typeof err == 'string') ? err : (err.message ? err.message : `Something goes wrong`);}
 
       client.respond(query, response, error);
     }, ctx);

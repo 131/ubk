@@ -165,9 +165,7 @@ class Server extends Events {
         this.broadcast('base', 'registered_client', client.export_json());
 
     } catch(err) {
-      var message = (typeof err == "string") ? err : 'error on server client registration';
-      if(err.message)
-        message = err.message;
+      var message = (typeof err == 'string') ? err : (err.message ? err.message : `Error on server client registration`);
       try {
         client.respond(query, null, message);
       } catch(err) {}
@@ -217,7 +215,7 @@ class Server extends Events {
       try {
         var args = [query.args].concat(query.xargs || []);
         response = await callback.apply(this, args);
-      } catch(err) { error = '' + err; }
+      } catch(err) {error = (typeof err == 'string') ? err : (err.message ? err.message : `Something goes wrong`);}
 
       client.respond(query, response, error);
     }, ctx);
@@ -242,9 +240,7 @@ class Server extends Events {
         if(!remote)
           throw `Bad client '${target.client_key}'`;
         response = await remote.send(...[target.ns, data.cmd, data.args].concat(data.xargs));
-      } catch(err) {
-        error = err;
-      }
+      } catch(err) {error = (typeof err == 'string') ? err : (err.message ? err.message : `Something goes wrong`);}
       return client.respond(data, response, error);
     }
 
