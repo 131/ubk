@@ -6,8 +6,8 @@ const Events  = require('eventemitter-co');
 const guid    = require('mout/random/guid');
 
 const log = {
-  info  : debug("ubk:server:client:tcp"),
-  error : debug("ubk:server:client:tcp"),
+  info  : debug("ubk:server:client:tcp:info"),
+  error : debug("ubk:server:client:tcp:error"),
 };
 
 const DELIMITER = 27;
@@ -99,7 +99,7 @@ class TCPTransport extends Events {
 
   // On error : Kill stream
   disconnect(reason) {
-    log.info("Disconnected client", reason);
+    log.info("Disconnected client", {reason});
 
     if(!this._stream)
       return;
@@ -108,7 +108,7 @@ class TCPTransport extends Events {
     this._stream.removeAllListeners("data");
     this._stream.end();
     this._stream = null;
-    this.emit("transport_disconnect").catch(log.error);
+    this.emit("transport_disconnect", reason).catch(log.error);
   }
 
 }

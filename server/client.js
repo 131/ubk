@@ -6,13 +6,12 @@ const Events  = require('eventemitter-co');
 const guid    = require('mout/random/guid');
 const defer   = require('nyks/promise/defer');
 
-const SubClient    = require('./subClient');
 const TCPTransport = require('./transport/tcp');
 const WSTransport  = require('./transport/ws');
 
 const log = {
-  info  : debug('ubk:server:client'),
-  error : debug('ubk:server:client'),
+  info  : debug('ubk:server:client:info'),
+  error : debug('ubk:server:client:error'),
   ping  : debug('ubk:server:ping')
 };
 
@@ -30,7 +29,6 @@ class Client extends Events {
 
     // Commands sent
     this._call_stack  = {};
-    this._sub_clients = {};
 
     if(type == 'ws')
       this.transport  = new WSTransport(stream);
@@ -59,8 +57,7 @@ class Client extends Events {
       client_key        : this.client_key,
       registration_time : Math.floor(this.registration_time / 1000),
       uptime            : Math.floor((Date.now() - this.registration_time) / 1000),
-      remoteAddress     : this.transport.export_json(),
-      sub_client_list   : Object.keys(this._sub_clients)
+      remoteAddress     : this.transport.export_json()
     };
   }
 
@@ -78,14 +75,7 @@ class Client extends Events {
       delete this._call_stack[data.quid];
       return;
     }
-
-    var remote         = this;
-    var sub_client_key = data.ns && data.ns.sub_client_key;
-
-    if(sub_client_key && this._sub_clients[sub_client_key])
-      remote = this._sub_clients[sub_client_key];
-
-    this.emit('received_cmd', remote, data).catch(log.error);
+    this.emit('received_cmd', this, data).catch(log.error);
   }
 
   signal(ns, cmd/*, payload[, xargs..] */) {
@@ -136,11 +126,7 @@ class Client extends Events {
     delete query.xargs;
     delete query.args;
 
-    try {
-      this.write(query);
-    } catch(err) {
-      log.error("can't write in the socket", err);
-    }
+    this.write(query);
   }
 
   write(query) {
@@ -156,18 +142,6 @@ class Client extends Events {
     this.emit('disconnected', this).catch(log.error);
   }
 
-  add_sub_client(client_key) {
-    if(this._sub_clients[client_key])
-      return this._sub_clients[client_key];
-    this._sub_clients[client_key] = new SubClient(this, client_key);
-    log.info("sub client %s connect", client_key);
-    return this._sub_clients[client_key];
-  }
-
-  remove_sub_client(client_key, reason) {
-    log.info("sub client %s disconnected", client_key, reason);
-    delete this._sub_clients[client_key];
-  }
 }
 
 module.exports = Client;

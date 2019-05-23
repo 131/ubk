@@ -12,8 +12,8 @@ const Client       = require('../');
 const TCPTransport = require('./transport');
 
 const log = {
-  error : debug("ubk:client:tcp"),
-  info  : debug("ubk:client:tcp")
+  error : debug("ubk:client:tcp:error"),
+  info  : debug("ubk:client:tcp:info")
 };
 
 class TCPClient extends Client {

@@ -15,8 +15,8 @@ const evtmsk = function(ns, cmd, space) {
 };
 
 const log = {
-  error : debug('ubk:client'),
-  info  : debug('ubk:client'),
+  error : debug('ubk:client:error'),
+  info  : debug('ubk:client:info'),
   ping  : debug('ubk:client:ping'),
 };
 
@@ -93,7 +93,7 @@ class Client extends Events {
       try {
         var args = [query.args].concat(query.xargs || []);
         response = await callback.apply(this, args);
-      } catch(err) { error = '' + err; }
+      } catch(err) {error = (typeof err == 'string') ? err : (err.message ? err.message : `Something goes wrong`);}
 
       client.respond(query, response, error);
     }, ctx);
@@ -109,6 +109,7 @@ class Client extends Events {
 
     // Directly send register
     var wait = defer();
+    wait.catch(log.error); //prevent UnhandledPromiseRejectionWarning
 
     do {
       if(this.shouldStop) {
@@ -120,8 +121,8 @@ class Client extends Events {
 
         this._transport = await this.transport();
         this._transport.on('message', this._onMessage.bind(this));
-        this._transport.once('error', function() {
-          wait.reject();
+        this._transport.once('error',  (err) => {
+          wait.reject(err);
         });
 
         this.connected = true;
@@ -129,7 +130,7 @@ class Client extends Events {
         this.emit('before_registration').catch(log.error);
         var opts = Object.assign({client_key : this.client_key}, this.options.registration_parameters);
         var registerTimeout =  defer();
-        setTimeout(registerTimeout.reject, 2000);
+        setTimeout(registerTimeout.reject.bind(registerTimeout, 'Registration timeout'), 2000);
         await Promise.race([this.send('base', 'register', opts), registerTimeout]);
         this.emit('registered').catch(log.error);
         this.emit('connected').catch(log.error);
@@ -137,7 +138,7 @@ class Client extends Events {
 
         do {
           wait = defer();
-          setTimeout(wait.reject, 10000);
+          setTimeout(wait.reject.bind(wait, 'Ping timeout'), 10000);
           var response =  await Promise.race([this.send('base', 'ping'), wait]);
           if(response != 'pong')
             throw "Invalid ping challenge reponse";
@@ -152,17 +153,13 @@ class Client extends Events {
 
       } catch(err) {
         wait.resolve(); //make sure not unHandler promise can trigger
-        log.error('' + err);
+        log.error(err);
         if(this._transport)
           this._transport.destroy();
 
         this._transport = null;
 
-        if(this.connected) {
-          this.connected = false;
-          this.emit('disconnected', err).catch(log.error);
-        }
-
+        this.emit('disconnected', err).catch(log.error);
         this.connected = false;
         if(this.shouldStop)
           continue; //no need to wait
