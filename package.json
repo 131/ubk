@@ -20,7 +20,7 @@
     "tcp",
     "ws"
   ],
-  "author": "Francois Leurent <131.php@cloudyks.org>",
+  "author": "Francois Leurent <131.code@leurent.email>",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/131/ubk/issues"

@@ -3,7 +3,7 @@ High performance, micro [JSON streaming](https://en.wikipedia.org/wiki/JSON_Stre
 [ubk](https://github.com/131/ubk) use ES8 async/await design (backed on [co/eventemitter-co](https://github.com/131/eventemitter-co)
 
 
-[![Build Status](https://travis-ci.org/131/ubk.svg?branch=master)](https://travis-ci.org/131/ubk)
+[![Build Status](https://github.com/131/ubk/actions/workflows/test.yml/badge.svg?branch=master)](https://github.com/131/ubk/actions/workflows/test.yml)
 [![Coverage Status](https://coveralls.io/repos/github/131/ubk/badge.svg?branch=master)](https://coveralls.io/github/131/ubk?branch=master)
 [![Version](https://img.shields.io/npm/v/ubk.svg)](https://www.npmjs.com/package/ubk)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](http://opensource.org/licenses/MIT)
