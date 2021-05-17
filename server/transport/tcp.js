@@ -35,7 +35,7 @@ class TCPTransport extends Events {
 
     this._stream.on('data', this._feed);
     this._stream.once('close', this.disconnect);
-    this._stream.once('error', this.disconnect);
+    this._stream.on('error', this.disconnect);
 
     // Load client cert when secured
     if(this._stream.encrypted != null) {

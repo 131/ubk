@@ -20,7 +20,7 @@ class WSTransport extends Events {
     });
 
     this.disconnect = this.disconnect.bind(this);
-    this._stream.once('error',  this.disconnect);
+    this._stream.on('error',  this.disconnect);
     this._stream.once('close',  this.disconnect);
     this._stream.once('disconnect', this.disconnect);
   }
