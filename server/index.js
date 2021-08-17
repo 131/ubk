@@ -5,6 +5,8 @@ const Events = require('eventemitter-co');
 const net    = require('net');
 const tls    = require('tls');
 
+const {socketwrap, override}  = require('socketwrap');
+
 const forIn  = require('mout/object/forIn');
 const merge  = require('mout/object/merge');
 const defer  = require('nyks/promise/defer');
@@ -36,6 +38,7 @@ class Server extends Events {
       socket_port   : 8001,
       heartbeat_interval : 1000 * 20,
       broadcasting_registration : true,
+      use_socketwrap : false,
       tls_options : {
         requestCert : true,
         rejectUnauthorized : true,
@@ -106,10 +109,19 @@ class Server extends Events {
   }
 
   // Build new client from tcp stream
-  new_tcp_client(stream) {
-    log.info("Incoming tcp stream");
-    var client = new Client('tcp', stream);
-    client.once('received_cmd', this.register_client);
+  async new_tcp_client(stream) {
+    try {
+      if(this.options.use_socketwrap) {
+        stream.on('error', (err) => {debug(err);});
+        let {remoteAddress, remotePort} = await socketwrap(stream);
+        override(stream, {remoteAddress, remotePort});
+      }
+      log.info("Incoming tcp stream");
+      var client = new Client('tcp', stream);
+      client.once('received_cmd', this.register_client);
+    } catch(err) {
+      log.error(err);
+    }
   }
 
   // Build new client from web socket stream
