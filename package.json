@@ -34,7 +34,8 @@
     "socketwrap": "^0.9.0"
   },
   "devDependencies": {
-    "eslint-plugin-ivs": "^2.1.0",
+    "eslint": "^8.57.0",
+    "eslint-plugin-ivs": "^4.0.1",
     "expect.js": "^0.3.1",
     "mocha": "^3.1.2",
     "nyc": "^13.0.1",
