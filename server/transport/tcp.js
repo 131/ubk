@@ -1,7 +1,7 @@
 "use strict";
 
 const debug   = require('debug');
-const Events  = require('eventemitter-co');
+const Events  = require('eventemitter-async');
 
 const guid    = require('mout/random/guid');
 
@@ -73,7 +73,7 @@ class TCPTransport extends Events {
 
       // Send to client
       if(data)
-        this.emit("transport_message", data).catch(log.error);
+        this.emit("transport_message", data).catch(this.emit.bind(this, 'error'));
     }
   }
 
@@ -93,6 +93,9 @@ class TCPTransport extends Events {
 
   // Send some data over the tcp stream
   write(data) {
+    // do not try to write on non socket
+    if(!this._stream)
+      return;
     this._stream.write(JSON.stringify(data));
     this._stream.write(String.fromCharCode(DELIMITER));
   }
@@ -108,7 +111,7 @@ class TCPTransport extends Events {
     this._stream.removeAllListeners("data");
     this._stream.end();
     this._stream = null;
-    this.emit("transport_disconnect", reason).catch(log.error);
+    this.emit("transport_disconnect", reason).catch(this.emit.bind(this, 'error'));
   }
 
 }

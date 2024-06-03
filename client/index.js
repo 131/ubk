@@ -1,14 +1,13 @@
 "use strict";
 
 const debug   = require('debug');
-const Events  = require('eventemitter-co');
+const Events  = require('eventemitter-async');
 
 const guid    = require('mout/random/guid');
 const defer   = require('nyks/promise/defer');
 const sleep   = require('nyks/function/sleep');
 
 
-const EVENT_SOMETHING_APPEND = 'change_append';
 
 const evtmsk = function(ns, cmd, space) {
   return `_${ns}:${cmd}:${space || ''}`;
@@ -109,7 +108,7 @@ class Client extends Events {
 
     // Directly send register
     var wait = defer();
-    wait.catch(log.error); //prevent UnhandledPromiseRejectionWarning
+    wait.catch(this.emit.bind(this, 'error')); //prevent UnhandledPromiseRejectionWarning
 
     do {
       if(this.shouldStop) {
@@ -127,13 +126,13 @@ class Client extends Events {
 
         this.connected = true;
 
-        this.emit('before_registration').catch(log.error);
+        this.emit('before_registration').catch(this.emit.bind(this, 'error'));
         var opts = Object.assign({client_key : this.client_key}, this.options.registration_parameters);
         var registerTimeout =  defer();
         setTimeout(registerTimeout.reject.bind(registerTimeout, 'Registration timeout'), 2000);
         await Promise.race([this.send('base', 'register', opts), registerTimeout]);
-        this.emit('registered').catch(log.error);
-        this.emit('connected').catch(log.error);
+        this.emit('registered').catch(this.emit.bind(this, 'error'));
+        this.emit('connected').catch(this.emit.bind(this, 'error'));
         log.info('Client has been registered');
 
         do {
@@ -159,7 +158,7 @@ class Client extends Events {
 
         this._transport = null;
 
-        this.emit('disconnected', err).catch(log.error);
+        this.emit('disconnected', err).catch(this.emit.bind(this, 'error'));
         this.connected = false;
         if(this.shouldStop)
           continue; //no need to wait
@@ -177,7 +176,7 @@ class Client extends Events {
 
 
   connect(host, port) {
-    this.emit(EVENT_START_LOOP).catch(log.error);
+    this.emit(EVENT_START_LOOP).catch(this.emit.bind(this, 'error'));
     this.options.server_hostaddr = host || this.options.server_hostaddr;
     this.options.server_port     = port || this.options.server_port;
     this.shouldStop = false;
@@ -202,17 +201,12 @@ class Client extends Events {
 
     if(callback) {
       callback.promise.chain(data.error, data.response);
-      this.emit(EVENT_SOMETHING_APPEND, callback.ns, callback.cmd).catch(log.error);
       delete this._call_stack[data.quid];
       return;
     }
 
-    this.emit('message', data).catch(log.error);
-    this.emit(evtmsk(data.ns, data.cmd), this, data)
-      .then(() => {
-        this.emit(EVENT_SOMETHING_APPEND, data.ns, data.cmd).catch(log.error);
-      })
-      .catch(log.error);
+    this.emit('message', data).catch(this.emit.bind(this, 'error'));
+    this.emit(evtmsk(data.ns, data.cmd), this, data).catch(this.emit.bind(this, 'error'));
   }
 
 }

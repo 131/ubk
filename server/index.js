@@ -1,7 +1,7 @@
 "use strict";
 
 const debug  = require('debug');
-const Events = require('eventemitter-co');
+const Events = require('eventemitter-async');
 const net    = require('net');
 const tls    = require('tls');
 
@@ -13,7 +13,6 @@ const defer  = require('nyks/promise/defer');
 
 const Client = require('./client.js');
 
-const EVENT_SOMETHING_APPEND = 'change_append';
 
 const log = {
   info  : debug('ubk:server:info'),
@@ -171,8 +170,8 @@ class Server extends Events {
       client.on('received_cmd', this._onMessage.bind(this));
 
       // THAT'S GREAT, LET'S NOTIFY EVERYBOOOOODYYYY
-      client.emit('registered', args).catch(log.error);
-      this.emit('registered_device', client, args).catch(log.error);
+      client.emit('registered', args).catch(this.emit.bind(this, 'error'));
+      this.emit('registered_device', client, args).catch(this.emit.bind(this, 'error'));
       if(this.options.broadcasting_registration)
         this.broadcast('base', 'registered_client', client.export_json());
 
@@ -195,7 +194,7 @@ class Server extends Events {
     // Remove from list
     log.info("Lost client", client.client_key);
     delete this._clientsList[client.client_key];
-    this.emit('unregistered_device', client).catch(log.error);
+    this.emit('unregistered_device', client).catch(this.emit.bind(this, 'error'));
     if(this.options.broadcasting_registration)
       this.broadcast('base', 'unregistered_client', {client_key : client.client_key });
   }
@@ -216,6 +215,22 @@ class Server extends Events {
       throw "Invalid rpc command";
     return await proc.callback.apply(proc.ctx || this, args);
   }
+
+
+  register_client_rpc(ns, cmd, callback, ctx) {
+
+    this.register_cmd(ns, cmd, async function(client, query) {
+      var response;
+      var error;
+      try {
+        var args = [query.args].concat(query.xargs || []);
+        response = await callback.apply(this, [{client}, ...args]);
+      } catch(err) {error = (typeof err == 'string') ? err : (err.message ? err.message : `Something goes wrong`);}
+
+      client.respond(query, response, error);
+    }, ctx);
+  }
+
 
   register_rpc(ns, cmd, callback, ctx) {
 
@@ -258,11 +273,7 @@ class Server extends Events {
 
     var ns  = target.ns;
     var cmd = data.cmd;
-    this.emit(evtmsk(ns, cmd), client, data)
-      .then(() => {
-        this.emit(EVENT_SOMETHING_APPEND, ns, cmd).catch(log.error);
-      })
-      .catch(log.error);
+    this.emit(evtmsk(ns, cmd), client, data).catch(this.emit.bind(this, 'error'));
   }
 
   broadcast(ns, cmd, payload) {
@@ -273,7 +284,7 @@ class Server extends Events {
       client.signal.apply(client, args);
     });
 
-    this.emit(`${ns}:${cmd}`, payload).catch(log.error);
+    this.emit(`${ns}:${cmd}`, payload).catch(this.emit.bind(this, 'error'));
   }
 
 }

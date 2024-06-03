@@ -1,6 +1,6 @@
 "use strict";
 
-const Events  = require('eventemitter-co');
+const Events  = require('eventemitter-async');
 
 
 class WSTransport extends Events {

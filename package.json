@@ -7,7 +7,7 @@
     "coveralls": "npm install coveralls && node ./node_modules/coveralls/bin/coveralls.js < ./coverage/lcov.info",
     "discify": "browserify --ignore cnyks --node -p discify index.js | discify-reporter --ir://run --source=disc/graph.json",
     "cover": "nyc --temp-directory coverage/.nyc_output --reporter text-summary --reporter html --reporter lcov  mocha",
-    "mocha": "mocha test",
+    "mocha": "mocha -b test",
     "test": "npm run eslint && npm run cover",
     "eslint": "eslint server client test"
   },
@@ -27,10 +27,10 @@
   },
   "homepage": "https://github.com/131/ubk",
   "dependencies": {
-    "debug": "^2.3.0",
-    "eventemitter-co": "^2.0.5",
-    "mout": "^1.0.0",
-    "nyks": "^5.11.8",
+    "debug": "^4.3.4",
+    "eventemitter-async": "^3.0.0",
+    "mout": "^1.2.4",
+    "nyks": "^6.11.0",
     "socketwrap": "^0.9.0"
   },
   "devDependencies": {

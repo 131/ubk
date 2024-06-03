@@ -1,7 +1,7 @@
 "use strict";
 
 const debug   = require('debug');
-const Events  = require('eventemitter-co');
+const Events  = require('eventemitter-async');
 
 const log = {
   info  : debug('ubk:server:client:ws'),
@@ -16,7 +16,7 @@ class WSTransport extends Events {
     this._stream = stream;
 
     this._stream.on('message',  (data) => {
-      this.emit('transport_message', JSON.parse(data)).catch(log.error);
+      this.emit('transport_message', JSON.parse(data)).catch(this.emit.bind(this, 'error'));
     });
 
     this.disconnect = this.disconnect.bind(this);
@@ -53,7 +53,7 @@ class WSTransport extends Events {
     this._stream.removeAllListeners('message');
     this._stream.close();
     this._stream = null;
-    this.emit('transport_disconnect').catch(log.error);
+    this.emit('transport_disconnect').catch(this.emit.bind(this, 'error'));
   }
 
 }

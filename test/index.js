@@ -27,13 +27,19 @@ describe("Basic server/client chat", function() {
       throw "This is an error";
     });
 
+
     server.register_rpc('base', 'crash_with_binding', function() { //plz no bind
       throw this.message;
     }, { message : "This is an error" });
 
+
     server.register_rpc('base', 'echo', async (payload) => {
       await sleep(10);
       return payload;
+    });
+
+    server.register_client_rpc('base', 'whoami', async ({client : {client_key} }) => {
+      return client_key;
     });
 
   });
@@ -54,6 +60,8 @@ describe("Basic server/client chat", function() {
 
   it("should test simple chat & remote throw", function(done) {
     var client = new Client({server_port : port});
+
+
     console.log("Connecting client");
 
     client.connect();
@@ -67,6 +75,10 @@ describe("Basic server/client chat", function() {
       } catch(error) {
         expect(error).to.eql("This is an error");
       }
+
+      var whoami = await client.send("base", "whoami");
+      expect(whoami).to.eql(client.client_key);
+
       try {
         await client.send("base", "crash_with_binding");
         expect().fail("Should have crash by now");
@@ -122,7 +134,7 @@ describe("Basic server/client chat", function() {
       expect(pong).to.eql("pong");
 
       var remote_network = device.export_json();
-      console.log({remote_network, network_challenge});
+      //console.log({remote_network, network_challenge});
 
       var lnkPort = remote_network.remoteAddress.port;
       expect(lnkPort).to.be.ok();
@@ -224,7 +236,7 @@ describe("Basic server/client chat", function() {
 
         if(Object.keys(checks).length == clients.length) {
           server.off('base:registered_client');
-          console.log({connectedClients, clients : clients.length});
+          //console.log({connectedClients, clients : clients.length});
           expect(connectedClients).to.eql(clients.length);
           done();
         }

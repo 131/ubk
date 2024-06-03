@@ -1,7 +1,7 @@
 "use strict";
 
 const debug   = require('debug');
-const Events  = require('eventemitter-co');
+const Events  = require('eventemitter-async');
 
 const guid    = require('mout/random/guid');
 const defer   = require('nyks/promise/defer');
@@ -37,8 +37,12 @@ class Client extends Events {
       this.transport = new TCPTransport(stream);
 
     this.type = type;
-    this.transport.once('transport_disconnect', this.disconnected, this);
-    this.transport.on('transport_message',    this.receive, this);
+    this.transport.once('transport_disconnect', (reason) => {
+      log.info("Client %s disconnected (%s)", this.client_key, reason);
+      this.emit('disconnected', this).catch(this.emit.bind(this, 'error'));
+    });
+
+    this.transport.on('transport_message',  this.receive, this);
 
     var registrationTimeout = setTimeout(() => {
       log.info('Client registration timeout');
@@ -75,7 +79,7 @@ class Client extends Events {
       delete this._call_stack[data.quid];
       return;
     }
-    this.emit('received_cmd', this, data).catch(log.error);
+    this.emit('received_cmd', this, data).catch(this.emit.bind(this, 'error'));
   }
 
   signal(ns, cmd/*, payload[, xargs..] */) {
@@ -115,6 +119,7 @@ class Client extends Events {
 
   // Low Level send raw JSON
   respond(query, response, error) {
+
     if(!(query.ns == 'base' && query.cmd == 'ping'))
       log.info("Responding msg '%s:%s' to %s ", query.ns, query.cmd, this.client_key);
 
@@ -135,11 +140,6 @@ class Client extends Events {
 
   disconnect(reason) {
     this.transport.disconnect(reason);
-  }
-
-  disconnected(reason) {
-    log.info("Client %s disconnected (%s)", this.client_key, reason);
-    this.emit('disconnected', this).catch(log.error);
   }
 
 }

@@ -1,6 +1,6 @@
 "use strict";
 
-const Events = require('eventemitter-co');
+const Events = require('eventemitter-async');
 const debug  = require('debug');
 
 const Delimiter = 27;
@@ -20,12 +20,9 @@ class TCPTransport extends Events {
 
     socket.on('data', this.receive.bind(this));
 
-    var error = (err) =>  {
-      this.emit('error', err).catch(log.error);
-    };
-    socket.once('error', error);
-    socket.once('end', error.bind(this, 'stream end'));
-    socket.once('close', error.bind(this, 'stream close'));
+    socket.once('error', this.emit.bind(this, 'error'));
+    socket.once('end', this.emit.bind(this, 'error'));
+    socket.once('close', this.emit.bind(this, 'error'));
   }
 
   // Low level method to send JSON data
@@ -48,7 +45,7 @@ class TCPTransport extends Events {
       } catch(e) {
         log.error("Parsing response failed", e);
       }
-      this.emit('message', data).catch(log.error);
+      this.emit('message', data).catch(this.emit.bind(this, 'error'));
     }
   }
 
