@@ -154,8 +154,6 @@ class Server extends Events {
       if(this._clientsList[client.client_key])
         throw `Client '${client.client_key}' already exists, sorry`;
 
-      await this.validate_device(client, args);
-
       let connected = true, reset = () => connected = false;
       client.once('disconnected', reset);
       client.respond(query, 'ok'); //respond may disconnect client
@@ -183,10 +181,6 @@ class Server extends Events {
       client.disconnect(message);
     }
 
-  }
-
-  async validate_device() {
-    return true;
   }
 
 

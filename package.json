@@ -9,7 +9,7 @@
     "cover": "nyc --temp-directory coverage/.nyc_output --reporter text-summary --reporter html --reporter lcov  mocha",
     "mocha": "mocha -b test",
     "test": "npm run eslint && npm run cover",
-    "eslint": "eslint server client test"
+    "eslint": "eslint ."
   },
   "repository": {
     "type": "git",
