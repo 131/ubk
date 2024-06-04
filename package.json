@@ -28,7 +28,7 @@
   "homepage": "https://github.com/131/ubk",
   "dependencies": {
     "debug": "^4.3.4",
-    "eventemitter-async": "^3.0.0",
+    "eventemitter-async": "^3.0.1",
     "mout": "^1.2.4",
     "nyks": "^6.11.0",
     "socketwrap": "^0.9.0"
